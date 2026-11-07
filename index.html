@@ -152,7 +152,7 @@ details summary::-webkit-details-marker{display:none}
   <button class="tab" data-v="home" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</button>
   <button class="tab" data-v="movs" onclick="go('movs')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Movimientos</button>
   <button class="tab" data-v="debts" onclick="go('debts')"><svg viewBox="0 0 24 24"><path d="M4 8h15l-4-4M20 16H5l4 4"/></svg>Deudas</button>
-  <button class="tab" data-v="savings" onclick="go('savings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.8 9.2c-.4-1-1.5-1.7-2.8-1.7-1.6 0-2.8.9-2.8 2.1 0 2.9 5.8 1.6 5.8 4.6 0 1.2-1.3 2.2-3 2.2-1.4 0-2.6-.7-3-1.8M12 6v1.5M12 16.5V18"/></svg>Ahorro</button>
+  <button class="tab" data-v="savings" onclick="go('savings')"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M6 6l9-3 2 3M15.5 15h2"/></svg>Bolsillos</button>
   <button class="tab" data-v="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Ajustes</button>
 </nav>
 
@@ -177,22 +177,39 @@ const sum = (a, f = x => x.amount) => a.reduce((s, x) => s + (Number(f(x)) || 0)
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const monthName = k => { const [y, m] = k.split('-'); const t = new Date(+y, +m - 1, 1).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
 const dshort = d => new Date(d + 'T12:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-const dlong = d => new Date(d + 'T12:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+const dlong = d => { const t = new Date(d + 'T12:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }); return t.charAt(0).toUpperCase() + t.slice(1); };
 const daysTo = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12:00')) / 864e5);
 const parseAmt = v => Number(String(v).replace(/\D/g, '')) || 0;
 function fmtInput(el) { const n = parseAmt(el.value); el.value = n ? n.toLocaleString('es-CO') : ''; }
 
 const CATS = {
-  out: [['Comida', '🍔'], ['Transporte', '🚌'], ['Hogar', '🏠'], ['Servicios', '💡'], ['Salud', '💊'], ['Estudio', '📚'], ['Ocio', '🎉'], ['Ropa', '👕'], ['Compras', '🛒'], ['Otros', '📦']],
-  in: [['Salario', '💼'], ['Negocio', '📈'], ['Ventas', '🏷️'], ['Regalo', '🎁'], ['Otros', '💰']]
+  out: [['Comida', '🍔'], ['Compras', '🛒'], ['Internet', '🌐'], ['Familia', '👨‍👩‍👧'], ['Gasolina', '⛽'], ['Ropa', '👕'], ['Cine', '🎬'], ['Bebidas', '🍺'], ['Otros', '📦']],
+  in: [['Salario', '💼'], ['Negocio', '📈'], ['Ventas', '🏷️'], ['Rendimientos', '💹'], ['Regalo', '🎁'], ['Otros', '💰']]
 };
-const emojiOf = (t, c) => (CATS[t].find(x => x[0] === c) || ['', t === 'in' ? '💰' : '📦'])[1];
+const OLD_EMO = { Transporte: '🚌', Hogar: '🏠', Servicios: '💡', Salud: '💊', Estudio: '📚', Ocio: '🎉' };
+const emojiOf = (t, c) => (CATS[t].find(x => x[0] === c) || ['', OLD_EMO[c] || (t === 'in' ? '💰' : '📦')])[1];
+const shiftKey = (k, n) => { const [y, m] = k.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+const monShort = k => { const [y, m] = k.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('es-CO', { month: 'short' }).replace('.', ''); };
 const COLORS = ['#007aff', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#5856d6', '#a2845e', '#8e8e93'];
 
 /* ============ Datos ============ */
 const KEY = 'misfinanzas_v1', CONN = 'misfinanzas_conn';
-const blank = () => ({ v: 1, updatedAt: 0, settings: { budget: 0, alertPct: 80, catLimits: {}, pin: '' }, movs: [], debts: [], goals: [] });
-function normalize(s) { const b = blank(); s = Object.assign(b, s || {}); s.settings = Object.assign(blank().settings, s.settings || {}); return s; }
+const DEF_POCKETS = () => [{ id: 'disp', name: 'Disponible', emoji: '💵', initial: 0, target: 0 }, { id: 'ahorro', name: 'Ahorro', emoji: '🐷', initial: 0, target: 0 }, { id: 'inv', name: 'Inversión', emoji: '📈', initial: 0, target: 0 }];
+const blank = () => ({ v: 1, updatedAt: 0, settings: { budget: 0, alertPct: 80, catLimits: {}, pin: '' }, movs: [], debts: [], pockets: DEF_POCKETS(), transfers: [] });
+function normalize(s) {
+  s = s || {}; const had = Array.isArray(s.pockets);
+  s = Object.assign(blank(), s); s.settings = Object.assign(blank().settings, s.settings || {});
+  if (!had) s.pockets = DEF_POCKETS();
+  if (!s.pockets.find(p => p.id === 'disp')) s.pockets.unshift(DEF_POCKETS()[0]);
+  s.transfers = s.transfers || [];
+  if (s.goals && s.goals.length) { // migrar metas antiguas a bolsillos
+    s.goals.forEach(g => {
+      if (!s.pockets.find(p => p.id === g.id)) s.pockets.push({ id: g.id, name: g.name, emoji: g.emoji || '🎯', initial: 0, target: g.target || 0 });
+      (g.entries || []).forEach(e => s.transfers.push({ id: e.id, from: e.amount > 0 ? 'disp' : g.id, to: e.amount > 0 ? g.id : 'disp', amount: Math.abs(e.amount), date: e.date, note: '' }));
+    });
+  }
+  delete s.goals; return s;
+}
 function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v) return normalize(s); } catch (e) { } return blank(); }
 let S = load();
 let conn = (() => { try { return JSON.parse(localStorage.getItem(CONN)) || {}; } catch (e) { return {}; } })();
@@ -231,7 +248,29 @@ const movsOf = k => S.movs.filter(m => mkey(m.date) === k);
 const paid = d => sum(d.payments || []);
 const pending = d => Math.max(0, d.amount - paid(d));
 const openDebts = dir => S.debts.filter(d => d.dir === dir && !d.closed);
-const saved = g => sum(g.entries || []);
+const pk = id => S.pockets.find(p => p.id === id) || { id, name: 'Bolsillo eliminado', emoji: '❔', initial: 0 };
+function pocketBal(id) {
+  const p = pk(id), mp = m => (m.pocket || 'disp') === id;
+  return (p.initial || 0) + sum(S.movs.filter(m => m.type === 'in' && mp(m))) - sum(S.movs.filter(m => m.type === 'out' && mp(m)))
+    + sum(S.transfers.filter(t => t.to === id)) - sum(S.transfers.filter(t => t.from === id));
+}
+const inRange = (m, a, b) => m.date >= a && m.date <= b;
+function catTotals(list) { const o = {}; list.forEach(m => o[m.cat] = (o[m.cat] || 0) + m.amount); return Object.entries(o).sort((a, b) => b[1] - a[1]); }
+function catBars(entries, type, total) {
+  return entries.map(([c, v], i) => `<div class="catrow"><div class="t"><span>${emojiOf(type, c)} ${esc(c)}</span><span><b>${fmt(v)}</b> <span class="muted">${total ? Math.round(v / total * 100) : 0}%</span></span></div>
+  <div class="bar"><i style="width:${total ? v / total * 100 : 0}%;background:${type === 'in' ? 'var(--green)' : COLORS[i % 10]}"></i></div></div>`).join('');
+}
+function compareData(k) {
+  const prev = shiftKey(k, -1), isCur = k === curM(), day = +today().slice(8);
+  const A = movsOf(k), B = isCur ? movsOf(prev).filter(m => +m.date.slice(8) <= day) : movsOf(prev);
+  const oa = A.filter(m => m.type === 'out'), ob = B.filter(m => m.type === 'out');
+  const cats = [...new Set([...oa, ...ob].map(m => m.cat))].map(c => {
+    const a = sum(oa.filter(m => m.cat === c)), b = sum(ob.filter(m => m.cat === c));
+    return { c, a, b, d: a - b, p: b ? (a - b) / b : null };
+  }).sort((x, y) => y.d - x.d);
+  return { k, prev, isCur, day, outA: sum(oa), outB: sum(ob), inA: sum(A.filter(m => m.type === 'in')), inB: sum(B.filter(m => m.type === 'in')), cats };
+}
+const pctTxt = (a, b) => b ? (a >= b ? '+' : '−') + Math.abs(Math.round((a - b) / b * 100)) + '%' : (a ? 'nuevo' : '0%');
 function budgetInfo(k = curM()) {
   const B = S.settings.budget || 0, spent = sum(movsOf(k).filter(m => m.type === 'out'));
   const pct = B ? spent / B : 0;
@@ -258,9 +297,9 @@ function checkBudget(amount, cat, date, excludeId) {
 const lvlColor = l => l === 'red' ? 'var(--red)' : l === 'orange' ? 'var(--orange)' : 'var(--green)';
 
 /* ============ Navegación ============ */
-let view = 'home', movMonth = curM(), debtDir = 'owed';
+let view = 'home', movMonth = curM(), debtDir = 'owed', movTab = 'mes', cmpMonth = curM(), rFrom = curM() + '-01', rTo = today();
 function go(v) { view = v; window.scrollTo(0, 0); render(); }
-function fabAction() { if (view === 'debts') debtForm(); else if (view === 'savings') goalForm(); else movForm(); }
+function fabAction() { if (view === 'debts') debtForm(); else if (view === 'savings') pocketForm(); else movForm(); }
 
 function header(title, sub) {
   return `<div class="top"><div><div class="sm">${sub || ''}</div><h1>${title}</h1></div>
@@ -269,7 +308,7 @@ function header(title, sub) {
 
 function render() {
   const app = $('#app');
-  app.innerHTML = ({ home: vHome, movs: vMovs, debts: vDebts, savings: vSavings, settings: vSettings })[view]();
+  app.innerHTML = ({ home: vHome, movs: vMovs, debts: vDebts, savings: vPockets, settings: vSettings })[view]();
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.v === view));
   $('#fab').style.display = view === 'settings' ? 'none' : '';
 }
@@ -301,7 +340,9 @@ function vHome() {
   });
 
   // Hero
-  h += `<div class="card hero"><div class="lbl">Disponible este mes</div><div class="big">${fmt(inc - out)}</div>
+  const disp = pocketBal('disp');
+  h += `<div class="card hero" onclick="pocketDetail('disp')"><div class="lbl">💵 Disponible</div><div class="big" style="margin-bottom:4px">${fmt(disp)}</div>
+  <div class="lbl" style="margin-bottom:14px">Balance del mes: <b>${inc - out >= 0 ? '+' : ''}${fmt(inc - out)}</b></div>
   <div class="row"><div class="pill"><small>↑ Ingresos</small><b>${fmt(inc)}</b></div><div class="pill"><small>↓ Gastos</small><b>${fmt(out)}</b></div></div></div>`;
 
   // Presupuesto
@@ -318,11 +359,21 @@ function vHome() {
   }
 
   // Resumen
-  const owed = sum(openDebts('owed'), pending), owe = sum(openDebts('owe'), pending), sv = sum(S.goals, saved);
+  const owed = sum(openDebts('owed'), pending), owe = sum(openDebts('owe'), pending), sv = sum(S.pockets.filter(p => p.id !== 'disp'), p => pocketBal(p.id));
   h += `<div class="grid3">
   <div class="mini" onclick="debtDir='owed';go('debts')"><div class="e">🤝</div><small>Me deben</small><b class="pos">${fmt(owed)}</b></div>
   <div class="mini" onclick="debtDir='owe';go('debts')"><div class="e">📌</div><small>Debo</small><b class="${owe ? 'red' : ''}">${fmt(owe)}</b></div>
-  <div class="mini" onclick="go('savings')"><div class="e">🐷</div><small>Ahorrado</small><b>${fmt(sv)}</b></div></div>`;
+  <div class="mini" onclick="go('savings')"><div class="e">👛</div><small>Bolsillos</small><b>${fmt(sv)}</b></div></div>`;
+
+  // Comparación con el mes pasado
+  const cd = compareData(k);
+  if (cd.outA || cd.outB) {
+    const up = cd.outA > cd.outB, ups = cd.cats.filter(x => x.d > 0).slice(0, 3);
+    h += `<div class="card" style="cursor:pointer" onclick="movTab='comparar';cmpMonth=curM();go('movs')"><div class="b-title"><span>📊 Gastos vs. mes pasado</span>
+    <span class="badge" style="background:${up ? 'rgba(255,59,48,.14)' : 'rgba(52,199,89,.16)'};color:${up ? 'var(--red)' : 'var(--green)'}">${pctTxt(cd.outA, cd.outB)}</span></div>
+    <div class="muted" style="margin-top:6px">${fmt(cd.outA)} este mes vs. ${fmt(cd.outB)} el mes pasado (del 1 al ${cd.day})</div>
+    ${ups.length ? `<div style="margin-top:10px;font-size:14px">Subiste en: ${ups.map(x => `<b>${emojiOf('out', x.c)} ${esc(x.c)}</b> <span class="red">+${fmt(x.d)}</span>`).join(' · ')}</div>` : `<div style="margin-top:10px;font-size:14px" class="pos">👏 No subiste en ninguna categoría</div>`}</div>`;
+  }
 
   // Por categoría
   const byCat = {}; ms.filter(m => m.type === 'out').forEach(m => byCat[m.cat] = (byCat[m.cat] || 0) + m.amount);
@@ -345,16 +396,71 @@ function vHome() {
 }
 
 function vMovs() {
+  let h = header('Movimientos');
+  h += `<div class="seg"><button class="${movTab === 'mes' ? 'on' : ''}" onclick="movTab='mes';render()">Por mes</button><button class="${movTab === 'rango' ? 'on' : ''}" onclick="movTab='rango';render()">Por fechas</button><button class="${movTab === 'comparar' ? 'on' : ''}" onclick="movTab='comparar';render()">Comparar</button></div>`;
+  if (movTab === 'rango') return h + vRange();
+  if (movTab === 'comparar') return h + vCompare();
   const ms = movsOf(movMonth).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
   const inc = sum(ms.filter(m => m.type === 'in')), out = sum(ms.filter(m => m.type === 'out'));
-  let h = header('Movimientos');
   h += `<div class="monthnav"><button onclick="shiftMonth(-1)">‹</button><span>${monthName(movMonth)}</span><button onclick="shiftMonth(1)">›</button></div>`;
-  h += `<div class="grid3"><div class="mini"><small>Ingresos</small><b class="pos">${fmt(inc)}</b></div><div class="mini"><small>Gastos</small><b>${fmt(out)}</b></div><div class="mini"><small>Balance</small><b class="${inc - out < 0 ? 'red' : ''}">${fmt(inc - out)}</b></div></div>`;
-  if (!ms.length) return h + `<div class="card empty"><span class="e">🗒️</span>No hay movimientos este mes.</div>`;
-  const byDay = {}; ms.forEach(m => (byDay[m.date] = byDay[m.date] || []).push(m));
+  h += summary3(inc, out);
+  return h + dayList(ms, 'No hay movimientos este mes.');
+}
+function summary3(inc, out) {
+  return `<div class="grid3"><div class="mini"><small>Entró</small><b class="pos">${fmt(inc)}</b></div><div class="mini"><small>Salió</small><b>${fmt(out)}</b></div><div class="mini"><small>Balance</small><b class="${inc - out < 0 ? 'red' : ''}">${fmt(inc - out)}</b></div></div>`;
+}
+function dayList(ms, emptyTxt) {
+  if (!ms.length) return `<div class="card empty"><span class="e">🗒️</span>${emptyTxt}</div>`;
+  let h = ''; const byDay = {}; ms.forEach(m => (byDay[m.date] = byDay[m.date] || []).push(m));
   Object.keys(byDay).sort().reverse().forEach(d => {
-    h += `<div class="sect"><span style="text-transform:capitalize">${dlong(d)}</span></div><div class="list">${byDay[d].map(movItem).join('')}</div>`;
+    const dd = byDay[d], net = sum(dd.filter(m => m.type === 'in')) - sum(dd.filter(m => m.type === 'out'));
+    h += `<div class="sect"><span style="text-transform:none">${dlong(d)}</span><span style="text-transform:none">${net >= 0 ? '+' : ''}${fmt(net)}</span></div><div class="list">${dd.map(movItem).join('')}</div>`;
   });
+  return h;
+}
+function setRange(kind) {
+  const t = today(), k = curM(), d = new Date(t + 'T12:00'), iso = x => { x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
+  if (kind === 'semana') { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); rFrom = iso(x); rTo = t; }
+  if (kind === 'mes') { rFrom = k + '-01'; rTo = t; }
+  if (kind === 'pasado') { const p = shiftKey(k, -1); rFrom = p + '-01'; rTo = iso(new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 0, 12)); }
+  if (kind === '30') { const x = new Date(d); x.setDate(x.getDate() - 29); rFrom = iso(x); rTo = t; }
+  if (kind === 'anio') { rFrom = t.slice(0, 4) + '-01-01'; rTo = t; }
+  render();
+}
+function vRange() {
+  if (rFrom > rTo) [rFrom, rTo] = [rTo, rFrom];
+  const ms = S.movs.filter(m => inRange(m, rFrom, rTo)).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
+  const ins = ms.filter(m => m.type === 'in'), outs = ms.filter(m => m.type === 'out'), inc = sum(ins), out = sum(outs);
+  const days = Math.round((new Date(rTo) - new Date(rFrom)) / 864e5) + 1;
+  let h = `<div class="form"><div class="field"><label>Desde</label><input type="date" value="${rFrom}" onchange="rFrom=this.value||rFrom;render()"></div>
+  <div class="field"><label>Hasta</label><input type="date" value="${rTo}" onchange="rTo=this.value||rTo;render()"></div></div>
+  <div style="display:flex;gap:8px;overflow-x:auto;margin:-4px 0 14px;padding-bottom:2px">${[['semana', 'Esta semana'], ['mes', 'Este mes'], ['pasado', 'Mes pasado'], ['30', 'Últimos 30 días'], ['anio', 'Este año']].map(([k, t]) => `<button class="badge" style="border:0;background:var(--card);color:var(--blue);padding:8px 12px;font-size:13px;white-space:nowrap" onclick="setRange('${k}')">${t}</button>`).join('')}</div>`;
+  h += summary3(inc, out);
+  h += `<div class="hint" style="margin-top:-4px">${days} día${days === 1 ? '' : 's'} · gasto promedio ${fmt(out / days)} por día</div>`;
+  if (outs.length) h += `<div class="sect">En qué se fue</div><div class="card">${catBars(catTotals(outs), 'out', out)}</div>`;
+  if (ins.length) h += `<div class="sect">De dónde entró</div><div class="card">${catBars(catTotals(ins), 'in', inc)}</div>`;
+  h += `<div class="sect">Detalle</div>` + dayList(ms, 'No hay movimientos en esas fechas.');
+  return h;
+}
+function vCompare() {
+  const cd = compareData(cmpMonth);
+  let h = `<div class="monthnav"><button onclick="cmpMonth=shiftKey(cmpMonth,-1);render()">‹</button><span>${monthName(cmpMonth)}</span><button onclick="if(cmpMonth<curM()){cmpMonth=shiftKey(cmpMonth,1);render()}">›</button></div>`;
+  // gráfica 6 meses
+  const ks = [5, 4, 3, 2, 1, 0].map(n => shiftKey(cmpMonth, -n)), vals = ks.map(k => sum(movsOf(k).filter(m => m.type === 'out'))), mx = Math.max(...vals, 1);
+  h += `<div class="card"><div class="b-title" style="margin-bottom:12px"><span>Gastos últimos 6 meses</span></div>
+  <div style="display:flex;align-items:flex-end;gap:8px;height:130px">${ks.map((k, i) => `<div style="flex:1;text-align:center;cursor:pointer" onclick="cmpMonth='${k}';render()">
+  <div style="font-size:10px;color:var(--sub);margin-bottom:4px">${vals[i] ? (vals[i] >= 1e6 ? (vals[i] / 1e6).toFixed(1) + 'M' : Math.round(vals[i] / 1e3) + 'k') : ''}</div>
+  <div style="height:${Math.max(3, vals[i] / mx * 95)}px;border-radius:6px;background:${k === cmpMonth ? 'var(--blue)' : 'var(--fill)'}"></div>
+  <div style="font-size:12px;margin-top:6px;color:${k === cmpMonth ? 'var(--blue)' : 'var(--sub)'}">${monShort(k)}</div></div>`).join('')}</div></div>`;
+  const up = cd.outA > cd.outB;
+  h += `<div class="hint">${cd.isCur ? `Mes en curso: comparo del 1 al ${cd.day} de este mes contra los mismos días de ${monthName(cd.prev).split(' ')[0].toLowerCase()}.` : `Comparo ${monthName(cd.k).split(' ')[0].toLowerCase()} completo contra ${monthName(cd.prev).split(' ')[0].toLowerCase()} completo.`}</div>`;
+  h += `<div class="grid3" style="grid-template-columns:1fr 1fr">
+  <div class="mini"><small>Gastos</small><b>${fmt(cd.outA)}</b><div style="font-size:13px;margin-top:4px" class="${up ? 'red' : 'pos'}">${up ? '▲' : '▼'} ${pctTxt(cd.outA, cd.outB)} <span class="muted">vs ${fmt(cd.outB)}</span></div></div>
+  <div class="mini"><small>Ingresos</small><b>${fmt(cd.inA)}</b><div style="font-size:13px;margin-top:4px" class="${cd.inA >= cd.inB ? 'pos' : 'red'}">${cd.inA >= cd.inB ? '▲' : '▼'} ${pctTxt(cd.inA, cd.inB)} <span class="muted">vs ${fmt(cd.inB)}</span></div></div></div>`;
+  if (!cd.cats.length) return h + `<div class="card empty"><span class="e">📊</span>No hay gastos para comparar.</div>`;
+  h += `<div class="sect">Por categoría</div><div class="list">` + cd.cats.map(x => `<div class="item" style="cursor:default"><div class="av">${emojiOf('out', x.c)}</div>
+  <div class="mid"><b>${esc(x.c)}</b><small>${fmt(x.a)} · antes ${fmt(x.b)}</small></div>
+  <div class="amt ${x.d > 0 ? 'red' : x.d < 0 ? 'pos' : 'muted'}">${x.d > 0 ? '▲ +' : x.d < 0 ? '▼ ' : ''}${x.d ? fmt(Math.abs(x.d)) : 'igual'}<div style="font-size:12px;font-weight:500">${x.d ? (x.p === null ? 'nuevo' : pctTxt(x.a, x.b)) : ''}</div></div></div>`).join('') + `</div>`;
   return h;
 }
 function shiftMonth(n) { const [y, m] = movMonth.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); movMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); render(); }
@@ -383,18 +489,18 @@ function vDebts() {
   return h;
 }
 
-function vSavings() {
-  let h = header('Ahorro');
-  const total = sum(S.goals, saved);
-  h += `<div class="card hero" style="background:linear-gradient(140deg,#30b0c7,#34c759)"><div class="lbl">Total ahorrado</div><div class="big" style="margin-bottom:4px">${fmt(total)}</div><div class="lbl">${S.goals.length} meta${S.goals.length === 1 ? '' : 's'}</div></div>`;
-  if (!S.goals.length) return h + `<div class="card empty"><span class="e">🐷</span>Crea tu primera meta de ahorro con <b>+</b>.<br>Ej: Fondo de emergencia, Viaje, Moto.</div>`;
-  S.goals.forEach(g => {
-    const s = saved(g), p = g.target ? Math.min(1, s / g.target) : 0;
-    h += `<div class="card goalcard" onclick="goalDetail('${g.id}')"><div class="h"><span class="e">${g.emoji || '🎯'}</span><div style="flex:1"><b>${esc(g.name)}</b>
-    <span class="muted">${g.target ? `${Math.round(p * 100)}% de ${fmt(g.target)}` : 'Sin meta fija'}</span></div><b>${fmt(s)}</b></div>
-    ${g.target ? `<div class="bar"><i style="width:${p * 100}%;background:var(--green)"></i></div>
-    <div class="prog"><span>${s >= g.target ? '🎉 ¡Meta cumplida!' : 'Faltan ' + fmt(g.target - s)}</span></div>` : ''}</div>`;
-  });
+function vPockets() {
+  let h = header('Bolsillos');
+  const total = sum(S.pockets, p => pocketBal(p.id));
+  h += `<div class="card hero" style="background:linear-gradient(140deg,#30b0c7,#34c759)"><div class="lbl">Total en tus bolsillos</div><div class="big" style="margin-bottom:4px">${fmt(total)}</div><div class="lbl">${S.pockets.length} bolsillos</div></div>`;
+  h += `<button class="btn" onclick="transferForm()">⇄ Mover dinero entre bolsillos</button>`;
+  h += `<div class="list" style="margin-top:14px">` + S.pockets.map(p => {
+    const b = pocketBal(p.id), pr = p.target ? Math.min(1, b / p.target) : 0;
+    return `<div class="item" onclick="pocketDetail('${p.id}')"><div class="av">${p.emoji}</div><div class="mid"><b>${esc(p.name)}</b>
+    <small>${p.target ? `${Math.round(pr * 100)}% de la meta ${fmt(p.target)}` : p.id === 'disp' ? 'Aquí entran tus ingresos' : 'Toca para meter o sacar'}</small>
+    ${p.target ? `<div class="bar" style="height:5px;margin:6px 0 0"><i style="width:${pr * 100}%;background:var(--green)"></i></div>` : ''}</div>
+    <div class="amt ${b < 0 ? 'red' : ''}">${fmt(b)}</div></div>`;
+  }).join('') + `</div><div class="hint">Toca <b>+</b> para crear otro bolsillo (ej: Viaje, Emergencias, Moto) con meta opcional.</div>`;
   return h;
 }
 
@@ -417,7 +523,7 @@ function vSettings() {
   <button class="btn sec" onclick="exportData()">⬇️ Descargar copia (.json)</button>
   <button class="btn sec" onclick="$('#imp').click()">⬆️ Restaurar copia</button><input type="file" id="imp" accept=".json,application/json" hidden onchange="importData(this)">
   <button class="btn danger" onclick="wipe()">Borrar todos los datos</button>
-  <div class="hint" style="text-align:center;margin-top:10px">Mis Finanzas · ${S.movs.length} movimientos · ${S.debts.length} deudas · ${S.goals.length} metas</div>`;
+  <div class="hint" style="text-align:center;margin-top:10px">Mis Finanzas · ${S.movs.length} movimientos · ${S.debts.length} deudas · ${S.pockets.length} bolsillos</div>`;
   return h;
 }
 
@@ -439,7 +545,7 @@ function dialog({ icon, title, body, ok = 'Aceptar', cancel = 'Cancelar', danger
 let fm = {};
 function movForm(id) {
   const m = id ? S.movs.find(x => x.id === id) : null;
-  fm = m ? { ...m } : { type: 'out', cat: 'Comida', date: today(), amount: 0, note: '' };
+  fm = m ? { ...m } : { type: 'out', cat: 'Comida', date: today(), amount: 0, note: '', pocket: 'disp' };
   drawMovForm(!!m);
 }
 function drawMovForm(edit) {
@@ -448,7 +554,8 @@ function drawMovForm(edit) {
   <input class="amount" id="f_amt" inputmode="numeric" placeholder="$0" value="${fm.amount ? fm.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this);fm.amount=parseAmt(this.value)" style="color:${fm.type === 'in' ? 'var(--green)' : 'var(--text)'}">
   <div class="chips">${CATS[fm.type].map(([c, e]) => `<button class="chip ${fm.cat === c ? 'on' : ''}" onclick="fm.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'))" data-c="${c}"><span>${e}</span>${c}</button>`).join('')}</div>
   <div class="form"><div class="field"><label>Nota</label><input id="f_note" placeholder="Ej: almuerzo" value="${esc(fm.note)}" oninput="fm.note=this.value"></div>
-  <div class="field"><label>Fecha</label><input type="date" id="f_date" value="${fm.date}" onchange="fm.date=this.value||today()"></div></div>
+  <div class="field"><label>Fecha</label><input type="date" id="f_date" value="${fm.date}" onchange="fm.date=this.value||today()"></div>
+  ${S.pockets.length > 1 ? `<div class="field"><label>${fm.type === 'in' ? 'Entra a' : 'Sale de'}</label><select onchange="fm.pocket=this.value">${S.pockets.map(p => `<option value="${p.id}" ${(fm.pocket || 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>
   <button class="btn ${fm.type === 'in' ? 'green' : ''}" onclick="saveMov()">Guardar ${fm.type === 'in' ? 'ingreso' : 'gasto'}</button>
   ${edit ? `<button class="btn danger" onclick="delMov()">Eliminar</button>` : ''}`);
   if (!edit) setTimeout(() => $('#f_amt') && $('#f_amt').focus(), 320);
@@ -522,44 +629,72 @@ function reopen(id) { const d = S.debts.find(x => x.id === id); if (pending(d) <
 async function delPayment(did, pid) { if (!await dialog({ icon: '💵', title: '¿Borrar este abono?', ok: 'Borrar', danger: true })) return; const d = S.debts.find(x => x.id === did); d.payments = d.payments.filter(p => p.id !== pid); d.closed = pending(d) <= 0; save(); debtDetail(did); }
 async function delDebt(id) { if (!await dialog({ icon: '🗑️', title: '¿Eliminar esta deuda?', body: 'Se borrarán también sus abonos.', ok: 'Eliminar', danger: true })) return; S.debts = S.debts.filter(x => x.id !== id); closeSheet(); save(); }
 
-// --- Ahorro ---
-const EMOJIS = ['🎯', '🛟', '✈️', '🏍️', '🚗', '🏠', '🎓', '💻', '📱', '💍', '🎁', '🏖️', '🩺', '📈', '🐷', '⭐'];
-let fg = {};
-function goalForm(id) {
-  const g = id ? S.goals.find(x => x.id === id) : null;
-  fg = g ? { ...g } : { name: '', target: 0, emoji: '🎯', entries: [] };
-  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>${g ? 'Editar' : 'Nueva'} meta</h2><button onclick="saveGoal()">Guardar</button></div>
-  <div class="emojis">${EMOJIS.map(e => `<button class="${fg.emoji === e ? 'on' : ''}" onclick="fg.emoji='${e}';document.querySelectorAll('.emojis button').forEach(b=>b.classList.toggle('on',b.textContent==='${e}'))">${e}</button>`).join('')}</div>
-  <div class="form"><div class="field"><label>Nombre</label><input id="g_name" placeholder="Ej: Fondo de emergencia" value="${esc(fg.name)}"></div>
-  <div class="field"><label>Meta</label><input id="g_target" inputmode="numeric" placeholder="Opcional" value="${fg.target ? fg.target.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)"></div></div>
-  <button class="btn" onclick="saveGoal()">Guardar</button>`);
+// --- Bolsillos ---
+const EMOJIS = ['💵', '🐷', '📈', '🛟', '✈️', '🏍️', '🚗', '🏠', '🎓', '💻', '📱', '🎁', '🏖️', '🩺', '🎯', '⭐'];
+let fp = {};
+function pocketForm(id) {
+  const p = id ? S.pockets.find(x => x.id === id) : null;
+  fp = p ? { ...p } : { name: '', emoji: '🎯', initial: 0, target: 0 };
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>${p ? 'Editar' : 'Nuevo'} bolsillo</h2><button onclick="savePocket()">Guardar</button></div>
+  <div class="emojis">${EMOJIS.map(e => `<button class="${fp.emoji === e ? 'on' : ''}" onclick="fp.emoji='${e}';document.querySelectorAll('.emojis button').forEach(b=>b.classList.toggle('on',b.textContent==='${e}'))">${e}</button>`).join('')}</div>
+  <div class="form"><div class="field"><label>Nombre</label><input id="k_name" placeholder="Ej: Viaje" value="${esc(fp.name)}"></div>
+  <div class="field"><label>Saldo inicial</label><input id="k_init" inputmode="numeric" placeholder="$0" value="${fp.initial ? fp.initial.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)"></div>
+  <div class="field"><label>Meta</label><input id="k_target" inputmode="numeric" placeholder="Opcional" value="${fp.target ? fp.target.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)"></div></div>
+  <div class="hint">Saldo inicial: la plata que ya tenías ahí antes de empezar a usar la app.</div>
+  <button class="btn" onclick="savePocket()">Guardar</button>
+  ${p && p.id !== 'disp' ? `<button class="btn danger" onclick="delPocket('${p.id}')">Eliminar bolsillo</button>` : ''}`);
 }
-function saveGoal() {
-  fg.name = $('#g_name').value.trim(); fg.target = parseAmt($('#g_target').value);
-  if (!fg.name) { toast('Ponle un nombre'); $('#g_name').focus(); return; }
-  const i = S.goals.findIndex(x => x.id === fg.id);
-  if (i >= 0) S.goals[i] = { ...fg }; else S.goals.push({ ...fg, id: uid() });
-  closeSheet(); save(); toast('✅ Meta guardada');
+function savePocket() {
+  fp.name = $('#k_name').value.trim(); fp.initial = parseAmt($('#k_init').value); fp.target = parseAmt($('#k_target').value);
+  if (!fp.name) { toast('Ponle un nombre'); $('#k_name').focus(); return; }
+  const i = S.pockets.findIndex(x => x.id === fp.id);
+  if (i >= 0) S.pockets[i] = { ...fp }; else S.pockets.push({ ...fp, id: uid() });
+  closeSheet(); save(); toast('✅ Bolsillo guardado');
 }
-function goalDetail(id) {
-  const g = S.goals.find(x => x.id === id); if (!g) return;
-  const s = saved(g), en = (g.entries || []).slice().sort((a, b) => b.date.localeCompare(a.date));
-  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>${g.emoji} ${esc(g.name)}</h2><button onclick="goalForm('${g.id}')">Editar</button></div>
-  <div class="detail-amt"><small>Ahorrado</small><b>${fmt(s)}</b>${g.target ? `<small>${Math.round(Math.min(1, s / g.target) * 100)}% de ${fmt(g.target)}</small><div class="bar"><i style="width:${Math.min(100, s / g.target * 100)}%;background:var(--green)"></i></div>` : ''}</div>
-  <input class="amount" id="e_amt" inputmode="numeric" placeholder="$0" oninput="fmtInput(this)" style="font-size:36px;padding-bottom:10px">
-  <div style="display:flex;gap:10px"><button class="btn green" onclick="goalMove('${g.id}',1)">+ Aportar</button><button class="btn sec" onclick="goalMove('${g.id}',-1)">− Retirar</button></div>
-  ${en.length ? `<div class="sect">Historial</div><div class="list">${en.map(e => `<div class="item"><div class="av">${e.amount > 0 ? '⬆️' : '⬇️'}</div><div class="mid"><b class="${e.amount > 0 ? 'pos' : 'red'}">${e.amount > 0 ? '+' : ''}${fmt(e.amount)}</b><small>${dshort(e.date)}</small></div></div>`).join('')}</div>` : ''}
-  <button class="btn danger" onclick="delGoal('${g.id}')">Eliminar meta</button>`);
+async function delPocket(id) {
+  if (Math.round(pocketBal(id)) !== 0) { await dialog({ icon: '👛', title: 'Primero vacía el bolsillo', body: `Tiene ${fmt(pocketBal(id))}. Muévelo a otro bolsillo antes de eliminarlo.`, cancel: '' }); return; }
+  if (!await dialog({ icon: '🗑️', title: '¿Eliminar bolsillo?', ok: 'Eliminar', danger: true })) return;
+  S.pockets = S.pockets.filter(x => x.id !== id); closeSheet(); save();
 }
-function goalMove(id, sign) {
-  const g = S.goals.find(x => x.id === id), a = parseAmt($('#e_amt').value);
+function pocketDetail(id) {
+  const p = pk(id), b = pocketBal(id);
+  const hist = [
+    ...S.transfers.filter(t => t.from === id || t.to === id).map(t => ({ date: t.date, id: t.id, amt: t.to === id ? t.amount : -t.amount, t: t.to === id ? `Desde ${pk(t.from).emoji} ${esc(pk(t.from).name)}` : `Hacia ${pk(t.to).emoji} ${esc(pk(t.to).name)}`, e: '⇄', tr: t.id, note: t.note })),
+    ...S.movs.filter(m => (m.pocket || 'disp') === id).map(m => ({ date: m.date, id: m.id, amt: m.type === 'in' ? m.amount : -m.amount, t: esc(m.note || m.cat), e: emojiOf(m.type, m.cat) }))
+  ].sort((a, c) => (c.date + c.id).localeCompare(a.date + a.id)).slice(0, 40);
+  const other = id === 'disp' ? (S.pockets.find(x => x.id !== 'disp') || {}).id : 'disp';
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>${p.emoji} ${esc(p.name)}</h2><button onclick="pocketForm('${id}')">Editar</button></div>
+  <div class="detail-amt"><small>Saldo</small><b class="${b < 0 ? 'red' : ''}">${fmt(b)}</b>${p.target ? `<small>${Math.round(Math.min(1, b / p.target) * 100)}% de ${fmt(p.target)}${b < p.target ? ' · faltan ' + fmt(p.target - b) : ' · 🎉 ¡meta cumplida!'}</small><div class="bar"><i style="width:${Math.min(100, Math.max(0, b / p.target * 100))}%;background:var(--green)"></i></div>` : ''}</div>
+  ${id === 'disp' ? `<button class="btn" onclick="transferForm('disp','${other || ''}')">⇄ Mover a otro bolsillo</button>`
+      : `<div style="display:flex;gap:10px"><button class="btn green" onclick="transferForm('disp','${id}')">+ Meter</button><button class="btn sec" onclick="transferForm('${id}','disp')">− Sacar</button></div>`}
+  ${hist.length ? `<div class="sect">Historial</div><div class="list">${hist.map(x => `<div class="item" ${x.tr ? `onclick="delTransfer('${x.tr}','${id}')"` : `onclick="closeSheet();movForm('${x.id}')"`}><div class="av">${x.e}</div><div class="mid"><b>${x.t}</b><small>${dshort(x.date)}${x.note ? ' · ' + esc(x.note) : ''}</small></div><div class="amt ${x.amt > 0 ? 'pos' : ''}">${x.amt > 0 ? '+' : '−'}${fmt(Math.abs(x.amt))}</div></div>`).join('')}</div>` : `<div class="card empty">Sin movimientos todavía.</div>`}`);
+}
+function transferForm(from, to) {
+  from = from || 'disp'; to = to || (S.pockets.find(p => p.id !== from) || {}).id;
+  const opts = sel => S.pockets.map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${p.emoji} ${esc(p.name)} (${fmt(pocketBal(p.id))})</option>`).join('');
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>Mover dinero</h2><button onclick="saveTransfer()">Mover</button></div>
+  <input class="amount" id="t_amt" inputmode="numeric" placeholder="$0" oninput="fmtInput(this)">
+  <div class="form"><div class="field"><label>Sale de</label><select id="t_from">${opts(from)}</select></div>
+  <div class="field"><label>Entra a</label><select id="t_to">${opts(to)}</select></div>
+  <div class="field"><label>Fecha</label><input type="date" id="t_date" value="${today()}"></div>
+  <div class="field"><label>Nota</label><input id="t_note" placeholder="Opcional"></div></div>
+  <div class="hint">Mover dinero no cuenta como gasto ni ingreso, solo cambia de bolsillo.</div>
+  <button class="btn" onclick="saveTransfer()">Mover dinero</button>`);
+  setTimeout(() => $('#t_amt') && $('#t_amt').focus(), 320);
+}
+async function saveTransfer() {
+  const a = parseAmt($('#t_amt').value), from = $('#t_from').value, to = $('#t_to').value;
   if (!a) { toast('Escribe el monto'); return; }
-  if (sign < 0 && a > saved(g)) { toast('No tienes tanto en esta meta'); return; }
-  (g.entries = g.entries || []).push({ id: uid(), amount: a * sign, date: today() });
-  save(); goalDetail(id);
-  toast(g.target && saved(g) >= g.target && sign > 0 ? '🎉 ¡Cumpliste tu meta!' : sign > 0 ? '🐷 Aporte guardado' : 'Retiro guardado');
+  if (from === to) { toast('Elige bolsillos distintos'); return; }
+  const bal = pocketBal(from);
+  if (a > bal && !await dialog({ icon: '⚠️', title: 'No te alcanza', body: `En ${esc(pk(from).name)} tienes ${fmt(bal)}. Si mueves ${fmt(a)} quedará en negativo.`, ok: 'Mover igual' })) return;
+  S.transfers.push({ id: uid(), from, to, amount: a, date: $('#t_date').value || today(), note: $('#t_note').value.trim() });
+  closeSheet(); save(); toast(`✅ ${fmt(a)} movidos a ${pk(to).name}`);
 }
-async function delGoal(id) { if (!await dialog({ icon: '🗑️', title: '¿Eliminar esta meta?', ok: 'Eliminar', danger: true })) return; S.goals = S.goals.filter(x => x.id !== id); closeSheet(); save(); }
+async function delTransfer(tid, back) {
+  if (!await dialog({ icon: '⇄', title: '¿Deshacer este movimiento?', body: 'El dinero vuelve al bolsillo de origen.', ok: 'Deshacer', danger: true })) return;
+  S.transfers = S.transfers.filter(t => t.id !== tid); save(); pocketDetail(back);
+}
 
 // --- Ajustes ---
 function setBudget() { S.settings.budget = parseAmt($('#s_budget').value); save(); toast('✅ Presupuesto actualizado'); }
