@@ -194,12 +194,12 @@ const daysTo = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12
 const parseAmt = v => Number(String(v).replace(/\D/g, '')) || 0;
 function fmtInput(el) { const n = parseAmt(el.value); el.value = n ? n.toLocaleString('es-CO') : ''; }
 
-const CATS = {
+const DEF_CATS = {
   out: [['Comida', '🍔'], ['Compras', '🛒'], ['Internet', '🌐'], ['Familia', '👨‍👩‍👧'], ['Gasolina', '⛽'], ['Ropa', '👕'], ['Cine', '🎬'], ['Bebidas', '🍺'], ['Otros', '📦']],
   in: [['Salario', '💼'], ['Negocio', '📈'], ['Ventas', '🏷️'], ['Rendimientos', '💹'], ['Regalo', '🎁'], ['Otros', '💰']]
 };
 const OLD_EMO = { Transporte: '🚌', Hogar: '🏠', Servicios: '💡', Salud: '💊', Estudio: '📚', Ocio: '🎉' };
-const emojiOf = (t, c) => (CATS[t].find(x => x[0] === c) || ['', OLD_EMO[c] || (t === 'in' ? '💰' : '📦')])[1];
+const emojiOf = (t, c) => ((S.cats[t] || []).find(x => x[0] === c) || ['', OLD_EMO[c] || (t === 'in' ? '💰' : '🏷️')])[1];
 const shiftKey = (k, n) => { const [y, m] = k.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
 const monShort = k => { const [y, m] = k.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('es-CO', { month: 'short' }).replace('.', ''); };
 const COLORS = ['#007aff', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa', '#ffcc00', '#5856d6', '#a2845e', '#8e8e93'];
@@ -207,12 +207,13 @@ const COLORS = ['#007aff', '#ff9500', '#34c759', '#af52de', '#ff2d55', '#5ac8fa'
 /* ============ Datos ============ */
 const KEY = 'misfinanzas_v1', CONN = 'misfinanzas_conn';
 const DEF_POCKETS = () => [{ id: 'disp', name: 'Disponible', emoji: '💵', initial: 0, target: 0 }, { id: 'ahorro', name: 'Ahorro', emoji: '🐷', initial: 0, target: 0 }, { id: 'inv', name: 'Inversión', emoji: '📈', initial: 0, target: 0 }];
-const blank = () => ({ v: 1, updatedAt: 0, settings: { budget: 0, alertPct: 80, catLimits: {}, pin: '', mailDaily: true, mailMonthly: true }, movs: [], debts: [], pockets: DEF_POCKETS(), transfers: [], fixed: [], quick: [] });
+const blank = () => ({ v: 1, updatedAt: 0, settings: { budget: 0, alertPct: 80, catLimits: {}, pin: '', mailDaily: true, mailMonthly: true }, movs: [], debts: [], pockets: DEF_POCKETS(), transfers: [], fixed: [], quick: [], cats: JSON.parse(JSON.stringify(DEF_CATS)) });
 function normalize(s) {
   s = s || {}; const had = Array.isArray(s.pockets);
   s = Object.assign(blank(), s); s.settings = Object.assign(blank().settings, s.settings || {});
   if (!had) s.pockets = DEF_POCKETS();
   if (!s.pockets.find(p => p.id === 'disp')) s.pockets.unshift(DEF_POCKETS()[0]);
+  if (!s.cats || !s.cats.out || !s.cats.in) s.cats = JSON.parse(JSON.stringify(DEF_CATS));
   s.transfers = s.transfers || []; s.fixed = s.fixed || []; s.quick = s.quick || [];
   if (s.goals && s.goals.length) { // migrar metas antiguas a bolsillos
     s.goals.forEach(g => {
@@ -226,7 +227,11 @@ function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s &
 let S = load();
 let conn = (() => { try { return JSON.parse(localStorage.getItem(CONN)) || {}; } catch (e) { return {}; } })();
 function persistLocal() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
-function save() { S.updatedAt = Date.now(); persistLocal(); schedulePush(); render(); }
+const DIRTY = 'misfinanzas_dirty';
+const isDirty = () => { try { return localStorage.getItem(DIRTY) === '1'; } catch (e) { return false; } };
+const setDirty = v => { try { v ? localStorage.setItem(DIRTY, '1') : localStorage.removeItem(DIRTY); } catch (e) { } };
+function saveQuiet() { S.updatedAt = Date.now(); persistLocal(); if (conn.url) setDirty(true); schedulePush(); }
+function save() { saveQuiet(); render(); }
 
 /* ============ Sincronización con Google Sheets ============ */
 let pushTimer, syncState = conn.url ? 'saving' : 'off';
@@ -236,8 +241,11 @@ function schedulePush() { if (!conn.url) return; clearTimeout(pushTimer); setSyn
 async function push() {
   if (!conn.url) return;
   try {
+    const sent = S.updatedAt;
     const r = await fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: conn.key || '', data: S }) });
-    const j = await r.json(); if (!j.ok) throw new Error(j.error); setSync('ok'); if (j.merged) pull(); return true;
+    const j = await r.json(); if (!j.ok) throw new Error(j.error);
+    if (S.updatedAt === sent) setDirty(false);
+    setSync('ok'); if (j.merged) pull(); return true;
   } catch (e) { setSync('error'); return false; }
 }
 async function pull() {
@@ -247,7 +255,13 @@ async function pull() {
     const r = await fetch(conn.url + '?key=' + encodeURIComponent(conn.key || '') + '&t=' + Date.now());
     const j = await r.json(); if (!j.ok) throw new Error(j.error);
     const remote = j.data;
-    if (remote && remote.updatedAt > S.updatedAt) { S = normalize(remote); persistLocal(); render(); setSync('ok'); if (j.pend) await push(); }
+    if (remote && remote.updatedAt > S.updatedAt && isDirty()) {
+      // Hay cambios tuyos sin subir: no los piso, solo agrego lo que llegó por el atajo
+      const ids = new Set(S.movs.map(m => m.id));
+      (j.pendList || []).forEach(m => { if (!ids.has(m.id)) S.movs.push(m); });
+      S.updatedAt = Date.now(); persistLocal(); render(); await push();
+    }
+    else if (remote && remote.updatedAt > S.updatedAt) { S = normalize(remote); persistLocal(); render(); setSync('ok'); if (j.pend) await push(); }
     else if (!remote || S.updatedAt > remote.updatedAt) { await push(); }
     else setSync('ok');
     runFixed();
@@ -265,8 +279,11 @@ const pk = id => S.pockets.find(p => p.id === id) || { id, name: 'Bolsillo elimi
 function pocketBal(id) {
   const p = pk(id), mp = m => (m.pocket || 'disp') === id;
   return (p.initial || 0) + sum(S.movs.filter(m => m.type === 'in' && mp(m))) - sum(S.movs.filter(m => m.type === 'out' && mp(m)))
-    + sum(S.transfers.filter(t => t.to === id)) - sum(S.transfers.filter(t => t.from === id));
+    + sum(S.transfers.filter(t => t.to === id)) - sum(S.transfers.filter(t => t.from === id))
+    + sum(S.debts.filter(d => d.pocket === id), d => d.dir === 'owe' ? d.amount : -d.amount)
+    + sum(S.debts.flatMap(d => (d.payments || []).filter(p => p.pocket === id).map(p => ({ amount: d.dir === 'owed' ? p.amount : -p.amount }))));
 }
+const pocketOpts = (sel, none) => S.pockets.map(p => `<option value="${p.id}" ${sel === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)} (${fmt(pocketBal(p.id))})</option>`).join('') + (none ? `<option value="none" ${sel === 'none' || !sel ? 'selected' : ''}>🚫 No mover dinero</option>` : '');
 const inRange = (m, a, b) => m.date >= a && m.date <= b;
 function catTotals(list) { const o = {}; list.forEach(m => o[m.cat] = (o[m.cat] || 0) + m.amount); return Object.entries(o).sort((a, b) => b[1] - a[1]); }
 function catBars(entries, type, total) {
@@ -369,7 +386,7 @@ function vHome() {
   // Alertas
   if (b.lvl === 'red') h += `<div class="alert red"><span class="ic">🚨</span><div><b>Te pasaste del presupuesto</b><br>Llevas ${fmt(b.spent)} de ${fmt(b.B)} (${fmt(-b.left)} de más).</div></div>`;
   else if (b.lvl === 'orange') h += `<div class="alert orange"><span class="ic">⚠️</span><div><b>Cuidado, vas en el ${Math.round(b.pct * 100)}% del presupuesto</b><br>Te quedan ${fmt(b.left)} para el resto del mes.</div></div>`;
-  CATS.out.forEach(([c]) => {
+  S.cats.out.forEach(([c]) => {
     const L = S.settings.catLimits[c]; if (!(L > 0)) return; const s = catSpent(k, c);
     if (s > L) h += `<div class="alert red"><span class="ic">${emojiOf('out', c)}</span><div><b>${c}: te pasaste del límite</b><br>${fmt(s)} de ${fmt(L)}.</div></div>`;
     else if (s >= L * S.settings.alertPct / 100) h += `<div class="alert orange"><span class="ic">${emojiOf('out', c)}</span><div><b>${c}: cerca del límite</b><br>${fmt(s)} de ${fmt(L)}.</div></div>`;
@@ -576,13 +593,14 @@ function vSettings() {
   const st = S.settings;
   let h = header('Ajustes');
   h += `<div class="sect">Presupuesto</div><div class="form">
-  <div class="field"><label>Límite mensual</label><input inputmode="numeric" id="s_budget" placeholder="$0" value="${st.budget ? st.budget.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)" onchange="setBudget()"></div>
+  <div class="field"><label>Límite mensual</label><input inputmode="numeric" id="s_budget" placeholder="$0" value="${st.budget ? st.budget.toLocaleString('es-CO') : ''}" oninput="fmtInput(this);setBudget(true)"></div>
   <div class="field"><label>Avisarme al</label><select id="s_pct" onchange="S.settings.alertPct=+this.value;save()">${[60, 70, 75, 80, 85, 90, 95].map(p => `<option ${p === st.alertPct ? 'selected' : ''} value="${p}">${p}%</option>`).join('')}</select></div></div>
-  <div class="hint">Antes de registrar un gasto que te haga llegar a este porcentaje o pasarte, te aviso.</div>`;
-  h += `<div class="sect">Límites por categoría (opcional)</div><div class="form">` + CATS.out.map(([c, e]) =>
-    `<div class="field"><label>${e} ${c}</label><input inputmode="numeric" placeholder="Sin límite" value="${st.catLimits[c] ? st.catLimits[c].toLocaleString('es-CO') : ''}" oninput="fmtInput(this)" onchange="setCatLimit('${c}',this.value)"></div>`).join('') + `</div>`;
+  <div class="hint">Se guarda solo mientras escribes. Antes de registrar un gasto que te haga llegar a este porcentaje o pasarte, te aviso.</div>`;
+  h += `<div class="sect">Límites por categoría (opcional)</div><div class="form">` + S.cats.out.map(([c, e]) =>
+    `<div class="field"><label>${e} ${c}</label><input inputmode="numeric" placeholder="Sin límite" value="${st.catLimits[c] ? st.catLimits[c].toLocaleString('es-CO') : ''}" oninput="fmtInput(this);setCatLimit('${c}',this.value)"></div>`).join('') + `</div>`;
   h += `<div class="sect">Automático</div><div class="form">
   <div class="field" onclick="fixedList()" style="cursor:pointer"><label>🔁 Gastos e ingresos fijos</label><span style="flex:1;text-align:right;color:var(--sub)">${S.fixed.length} ›</span></div>
+  <div class="field" onclick="catList()" style="cursor:pointer"><label>🏷️ Categorías</label><span style="flex:1;text-align:right;color:var(--sub)">${S.cats.out.length + S.cats.in.length} ›</span></div>
   <div class="field" onclick="quickList()" style="cursor:pointer"><label>⚡ Atajos rápidos</label><span style="flex:1;text-align:right;color:var(--sub)">${S.quick.length} ›</span></div></div>`;
   h += `<div class="sect">Correos (desde tu Google)</div><div class="form">
   <div class="field"><label style="flex:1">📬 Resumen diario (8 p. m.)</label><label class="sw"><input type="checkbox" ${st.mailDaily ? 'checked' : ''} onchange="S.settings.mailDaily=this.checked;save()"><i></i></label></div>
@@ -624,14 +642,14 @@ function dialog({ icon, title, body, ok = 'Aceptar', cancel = 'Cancelar', danger
 let fm = {};
 function movForm(id) {
   const m = id ? S.movs.find(x => x.id === id) : null;
-  fm = m ? { ...m } : { type: 'out', cat: 'Comida', date: today(), amount: 0, note: '', pocket: 'disp' };
+  fm = m ? { ...m } : { type: 'out', cat: S.cats.out[0][0], date: today(), amount: 0, note: '', pocket: 'disp' };
   drawMovForm(!!m);
 }
 function drawMovForm(edit) {
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>${edit ? 'Editar' : 'Nuevo'} movimiento</h2><button onclick="saveMov()">Guardar</button></div>
   <div class="seg"><button class="${fm.type === 'out' ? 'on' : ''}" onclick="fmType('out')">Gasto</button><button class="${fm.type === 'in' ? 'on' : ''}" onclick="fmType('in')">Ingreso</button></div>
   <input class="amount" id="f_amt" inputmode="numeric" placeholder="$0" value="${fm.amount ? fm.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this);fm.amount=parseAmt(this.value)" style="color:${fm.type === 'in' ? 'var(--green)' : 'var(--text)'}">
-  <div class="chips">${CATS[fm.type].map(([c, e]) => `<button class="chip ${fm.cat === c ? 'on' : ''}" onclick="fm.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'))" data-c="${c}"><span>${e}</span>${c}</button>`).join('')}</div>
+  <div class="chips">${S.cats[fm.type].map(([c, e]) => `<button class="chip ${fm.cat === c ? 'on' : ''}" onclick="fm.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'))" data-c="${c}"><span>${e}</span>${c}</button>`).join('')}</div>
   <div class="form"><div class="field"><label>Nota</label><input id="f_note" placeholder="Ej: almuerzo" value="${esc(fm.note)}" oninput="fm.note=this.value"></div>
   <div class="field"><label>Fecha</label><input type="date" id="f_date" value="${fm.date}" onchange="fm.date=this.value||today()"></div>
   ${S.pockets.length > 1 ? `<div class="field"><label>${fm.type === 'in' ? 'Entra a' : 'Sale de'}</label><select onchange="fm.pocket=this.value">${S.pockets.map(p => `<option value="${p.id}" ${(fm.pocket || 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>
@@ -639,7 +657,7 @@ function drawMovForm(edit) {
   ${edit ? `<button class="btn danger" onclick="delMov()">Eliminar</button>` : ''}`);
   if (!edit) setTimeout(() => $('#f_amt') && $('#f_amt').focus(), 320);
 }
-function fmType(t) { fm.type = t; fm.cat = CATS[t][0][0]; drawMovForm(!!S.movs.find(x => x.id === fm.id)); }
+function fmType(t) { fm.type = t; fm.cat = S.cats[t][0][0]; drawMovForm(!!S.movs.find(x => x.id === fm.id)); }
 async function saveMov() {
   fm.amount = parseAmt($('#f_amt').value);
   if (!fm.amount) { $('#f_amt').focus(); toast('Escribe el monto'); return; }
@@ -664,19 +682,21 @@ async function delMov() {
 let fd = {};
 function debtForm(id) {
   const d = id ? S.debts.find(x => x.id === id) : null;
-  fd = d ? { ...d } : { dir: debtDir, person: '', amount: 0, date: today(), due: '', note: '', payments: [], closed: false };
+  fd = d ? { ...d } : { dir: debtDir, person: '', amount: 0, date: today(), due: '', note: '', payments: [], closed: false, pocket: 'disp' };
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>${d ? 'Editar' : 'Nueva'} deuda</h2><button onclick="saveDebt()">Guardar</button></div>
   <div class="seg"><button class="${fd.dir === 'owed' ? 'on' : ''}" onclick="fd.dir='owed';this.classList.add('on');this.nextElementSibling.classList.remove('on')">Me deben</button><button class="${fd.dir === 'owe' ? 'on' : ''}" onclick="fd.dir='owe';this.classList.add('on');this.previousElementSibling.classList.remove('on')">Debo</button></div>
   <input class="amount" id="d_amt" inputmode="numeric" placeholder="$0" value="${fd.amount ? fd.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
   <div class="form"><div class="field"><label>Persona</label><input id="d_person" placeholder="Nombre" value="${esc(fd.person)}"></div>
   <div class="field"><label>Fecha</label><input type="date" id="d_date" value="${fd.date}"></div>
   <div class="field"><label>Fecha límite</label><input type="date" id="d_due" value="${fd.due || ''}"></div>
-  <div class="field"><label>Nota</label><input id="d_note" placeholder="Opcional" value="${esc(fd.note)}"></div></div>
-  <div class="hint">Si pones fecha límite, te aviso en Inicio cuando falten 3 días o menos.</div>
+  <div class="field"><label>Nota</label><input id="d_note" placeholder="Opcional" value="${esc(fd.note)}"></div>
+  <div class="field"><label>Plata</label><select id="d_pocket">${pocketOpts(fd.pocket || 'none', true)}</select></div></div>
+  <div class="hint"><b>Plata:</b> si prestas, de qué bolsillo sale; si te prestan, a cuál entra. Si es una deuda vieja, elige "No mover dinero".<br>Con fecha límite te aviso en Inicio cuando falten 3 días o menos.</div>
   <button class="btn" onclick="saveDebt()">Guardar</button>`);
 }
 function saveDebt() {
   fd.amount = parseAmt($('#d_amt').value); fd.person = $('#d_person').value.trim(); fd.date = $('#d_date').value || today(); fd.due = $('#d_due').value; fd.note = $('#d_note').value.trim();
+  const dp = $('#d_pocket').value; if (dp === 'none') delete fd.pocket; else fd.pocket = dp;
   if (!fd.amount) { toast('Escribe el monto'); return; } if (!fd.person) { toast('Escribe el nombre'); $('#d_person').focus(); return; }
   fd.closed = pending(fd) <= 0;
   const i = S.debts.findIndex(x => x.id === fd.id);
@@ -691,19 +711,28 @@ function debtDetail(id) {
   <small>Total ${fmt(d.amount)} · Abonado ${fmt(paid(d))}${d.due ? ' · Vence ' + dshort(d.due) : ''}</small>
   <div class="bar"><i style="width:${d.amount ? paid(d) / d.amount * 100 : 0}%;background:var(--green)"></i></div>${d.note ? `<small>${esc(d.note)}</small>` : ''}</div>
   ${!d.closed ? `<div class="form"><div class="field"><label>Abono</label><input id="p_amt" inputmode="numeric" placeholder="$0" oninput="fmtInput(this)"></div>
-  <div class="field"><label>Fecha</label><input type="date" id="p_date" value="${today()}"></div></div>
+  <div class="field"><label>Fecha</label><input type="date" id="p_date" value="${today()}"></div>
+  <div class="field"><label>${d.dir === 'owed' ? 'Entra a' : 'Sale de'}</label><select id="p_pocket">${pocketOpts(d.pocket || 'disp', true)}</select></div></div>
+  <div class="hint">${d.dir === 'owed' ? 'Si te paga más de lo que debe, lo de más se anota como ingreso por intereses.' : 'Si pagas más de lo que debes, lo de más se anota como gasto por intereses.'}</div>
   <button class="btn green" onclick="addPayment('${d.id}')">Registrar abono</button>
   <button class="btn sec" onclick="payAll('${d.id}')">Marcar como pagada completa</button>` : `<div class="alert blue"><span class="ic">✅</span><div>Esta deuda ya está pagada.</div></div><button class="btn sec" onclick="reopen('${d.id}')">Reabrir</button>`}
-  ${pays.length ? `<div class="sect">Abonos</div><div class="list">${pays.map(p => `<div class="item" onclick="delPayment('${d.id}','${p.id}')"><div class="av">💵</div><div class="mid"><b>${fmt(p.amount)}</b><small>${dshort(p.date)} · toca para borrar</small></div></div>`).join('')}</div>` : ''}
+  ${pays.length ? `<div class="sect">Abonos</div><div class="list">${pays.map(p => `<div class="item" onclick="delPayment('${d.id}','${p.id}')"><div class="av">💵</div><div class="mid"><b>${fmt(p.amount)}</b><small>${dshort(p.date)}${p.pocket ? ' · ' + pk(p.pocket).emoji + ' ' + esc(pk(p.pocket).name) : ''} · toca para borrar</small></div></div>`).join('')}</div>` : ''}
   <button class="btn danger" onclick="delDebt('${d.id}')">Eliminar deuda</button>`);
+}
+function registerPayment(d, a, date, pocket) {
+  const pend = pending(d), base = Math.min(a, pend), extra = a - base;
+  const pay = { id: uid(), amount: base, date }; if (pocket && pocket !== 'none') pay.pocket = pocket;
+  d.payments = d.payments || []; if (base > 0) d.payments.push(pay);
+  if (extra > 0) S.movs.push({ id: uid(), type: d.dir === 'owed' ? 'in' : 'out', amount: extra, cat: d.dir === 'owed' ? 'Rendimientos' : 'Otros', note: (d.dir === 'owed' ? 'Intereses de ' : 'Intereses a ') + d.person, date, pocket: pocket && pocket !== 'none' ? pocket : 'disp' });
+  d.closed = pending(d) <= 0; return extra;
 }
 function addPayment(id) {
   const d = S.debts.find(x => x.id === id), a = parseAmt($('#p_amt').value);
   if (!a) { toast('Escribe el abono'); return; }
-  d.payments = d.payments || []; d.payments.push({ id: uid(), amount: Math.min(a, pending(d)), date: $('#p_date').value || today() });
-  d.closed = pending(d) <= 0; save(); debtDetail(id); toast(d.closed ? '🎉 ¡Deuda saldada!' : '✅ Abono registrado');
+  const extra = registerPayment(d, a, $('#p_date').value || today(), $('#p_pocket').value);
+  save(); debtDetail(id); toast(d.closed ? (extra ? `🎉 Saldada + ${fmt(extra)} de intereses` : '🎉 ¡Deuda saldada!') : '✅ Abono registrado');
 }
-function payAll(id) { const d = S.debts.find(x => x.id === id); const p = pending(d); if (p > 0) (d.payments = d.payments || []).push({ id: uid(), amount: p, date: today() }); d.closed = true; save(); debtDetail(id); toast('🎉 ¡Deuda saldada!'); }
+function payAll(id) { const d = S.debts.find(x => x.id === id), el = $('#p_pocket'); const p = pending(d); if (p > 0) registerPayment(d, p, today(), el ? el.value : 'none'); d.closed = true; save(); debtDetail(id); toast('🎉 ¡Deuda saldada!'); }
 function reopen(id) { const d = S.debts.find(x => x.id === id); if (pending(d) <= 0 && (d.payments || []).length) d.payments.pop(); d.closed = pending(d) <= 0; save(); debtDetail(id); }
 async function delPayment(did, pid) { if (!await dialog({ icon: '💵', title: '¿Borrar este abono?', ok: 'Borrar', danger: true })) return; const d = S.debts.find(x => x.id === did); d.payments = d.payments.filter(p => p.id !== pid); d.closed = pending(d) <= 0; save(); debtDetail(did); }
 async function delDebt(id) { if (!await dialog({ icon: '🗑️', title: '¿Eliminar esta deuda?', body: 'Se borrarán también sus abonos.', ok: 'Eliminar', danger: true })) return; S.debts = S.debts.filter(x => x.id !== id); closeSheet(); save(); }
@@ -739,14 +768,16 @@ function pocketDetail(id) {
   const p = pk(id), b = pocketBal(id);
   const hist = [
     ...S.transfers.filter(t => t.from === id || t.to === id).map(t => ({ date: t.date, id: t.id, amt: t.to === id ? t.amount : -t.amount, t: t.to === id ? `Desde ${pk(t.from).emoji} ${esc(pk(t.from).name)}` : `Hacia ${pk(t.to).emoji} ${esc(pk(t.to).name)}`, e: '⇄', tr: t.id, note: t.note })),
-    ...S.movs.filter(m => (m.pocket || 'disp') === id).map(m => ({ date: m.date, id: m.id, amt: m.type === 'in' ? m.amount : -m.amount, t: esc(m.note || m.cat), e: emojiOf(m.type, m.cat) }))
+    ...S.movs.filter(m => (m.pocket || 'disp') === id).map(m => ({ date: m.date, id: m.id, amt: m.type === 'in' ? m.amount : -m.amount, t: esc(m.note || m.cat), e: emojiOf(m.type, m.cat) })),
+    ...S.debts.filter(d => d.pocket === id).map(d => ({ date: d.date, id: d.id, amt: d.dir === 'owe' ? d.amount : -d.amount, t: (d.dir === 'owe' ? 'Préstamo de ' : 'Préstamo a ') + esc(d.person), e: d.dir === 'owe' ? '📌' : '🤝', debt: d.id })),
+    ...S.debts.flatMap(d => (d.payments || []).filter(p => p.pocket === id).map(p => ({ date: p.date, id: p.id, amt: d.dir === 'owed' ? p.amount : -p.amount, t: (d.dir === 'owed' ? 'Abono de ' : 'Abono a ') + esc(d.person), e: '💵', debt: d.id })))
   ].sort((a, c) => (c.date + c.id).localeCompare(a.date + a.id)).slice(0, 40);
   const other = id === 'disp' ? (S.pockets.find(x => x.id !== 'disp') || {}).id : 'disp';
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>${p.emoji} ${esc(p.name)}</h2><button onclick="pocketForm('${id}')">Editar</button></div>
   <div class="detail-amt"><small>Saldo</small><b class="${b < 0 ? 'red' : ''}">${fmt(b)}</b>${p.target ? `<small>${Math.round(Math.min(1, b / p.target) * 100)}% de ${fmt(p.target)}${b < p.target ? ' · faltan ' + fmt(p.target - b) : ' · 🎉 ¡meta cumplida!'}</small><div class="bar"><i style="width:${Math.min(100, Math.max(0, b / p.target * 100))}%;background:var(--green)"></i></div>` : ''}</div>
   ${id === 'disp' ? `<button class="btn" onclick="transferForm('disp','${other || ''}')">⇄ Mover a otro bolsillo</button>`
       : `<div style="display:flex;gap:10px"><button class="btn green" onclick="transferForm('disp','${id}')">+ Meter</button><button class="btn sec" onclick="transferForm('${id}','disp')">− Sacar</button></div>`}
-  ${hist.length ? `<div class="sect">Historial</div><div class="list">${hist.map(x => `<div class="item" ${x.tr ? `onclick="delTransfer('${x.tr}','${id}')"` : `onclick="closeSheet();movForm('${x.id}')"`}><div class="av">${x.e}</div><div class="mid"><b>${x.t}</b><small>${dshort(x.date)}${x.note ? ' · ' + esc(x.note) : ''}</small></div><div class="amt ${x.amt > 0 ? 'pos' : ''}">${x.amt > 0 ? '+' : '−'}${fmt(Math.abs(x.amt))}</div></div>`).join('')}</div>` : `<div class="card empty">Sin movimientos todavía.</div>`}`);
+  ${hist.length ? `<div class="sect">Historial</div><div class="list">${hist.map(x => `<div class="item" ${x.tr ? `onclick="delTransfer('${x.tr}','${id}')"` : x.debt ? `onclick="debtDetail('${x.debt}')"` : `onclick="closeSheet();movForm('${x.id}')"`}><div class="av">${x.e}</div><div class="mid"><b>${x.t}</b><small>${dshort(x.date)}${x.note ? ' · ' + esc(x.note) : ''}</small></div><div class="amt ${x.amt > 0 ? 'pos' : ''}">${x.amt > 0 ? '+' : '−'}${fmt(Math.abs(x.amt))}</div></div>`).join('')}</div>` : `<div class="card empty">Sin movimientos todavía.</div>`}`);
 }
 function transferForm(from, to) {
   from = from || 'disp'; to = to || (S.pockets.find(p => p.id !== from) || {}).id;
@@ -788,13 +819,13 @@ function fixedList() {
 let ff = {};
 function fixedForm(id) {
   const f = id ? S.fixed.find(x => x.id === id) : null;
-  ff = f ? { ...f } : { name: '', type: 'out', amount: 0, cat: 'Internet', day: +today().slice(8), pocket: 'disp', active: true };
+  ff = f ? { ...f } : { name: '', type: 'out', amount: 0, cat: (S.cats.out.find(c => c[0] === 'Internet') || S.cats.out[0])[0], day: +today().slice(8), pocket: 'disp', active: true };
   drawFixedForm(!!f);
 }
 function drawFixedForm(edit) {
-  const catOpts = CATS[ff.type].map(([c, e]) => `<option ${ff.cat === c ? 'selected' : ''} value="${c}">${e} ${c}</option>`).join('');
+  const catOpts = S.cats[ff.type].map(([c, e]) => `<option ${ff.cat === c ? 'selected' : ''} value="${c}">${e} ${c}</option>`).join('');
   openSheet(`<div class="sh-head"><button onclick="fixedList()">Atrás</button><h2>${edit ? 'Editar' : 'Nuevo'} fijo</h2><button onclick="saveFixed()">Guardar</button></div>
-  <div class="seg"><button class="${ff.type === 'out' ? 'on' : ''}" onclick="ffSync();ff.type='out';ff.cat=CATS.out[0][0];drawFixedForm(${edit})">Gasto fijo</button><button class="${ff.type === 'in' ? 'on' : ''}" onclick="ffSync();ff.type='in';ff.cat=CATS.in[0][0];drawFixedForm(${edit})">Ingreso fijo</button></div>
+  <div class="seg"><button class="${ff.type === 'out' ? 'on' : ''}" onclick="ffSync();ff.type='out';ff.cat=S.cats.out[0][0];drawFixedForm(${edit})">Gasto fijo</button><button class="${ff.type === 'in' ? 'on' : ''}" onclick="ffSync();ff.type='in';ff.cat=S.cats.in[0][0];drawFixedForm(${edit})">Ingreso fijo</button></div>
   <input class="amount" id="x_amt" inputmode="numeric" placeholder="$0" value="${ff.amount ? ff.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
   <div class="form"><div class="field"><label>Nombre</label><input id="x_name" placeholder="${ff.type === 'in' ? 'Ej: Sueldo' : 'Ej: Internet Claro'}" value="${esc(ff.name)}"></div>
   <div class="field"><label>Categoría</label><select id="x_cat">${catOpts}</select></div>
@@ -829,12 +860,12 @@ function quickList() {
   <button class="btn" onclick="quickForm()">+ Nuevo atajo</button>`);
 }
 let fq = {};
-function quickForm(id) { const x = id ? S.quick.find(z => z.id === id) : null; fq = x ? { ...x } : { type: 'out', cat: 'Gasolina', amount: 0, name: '', pocket: 'disp' }; drawQuickForm(!!x); }
+function quickForm(id) { const x = id ? S.quick.find(z => z.id === id) : null; fq = x ? { ...x } : { type: 'out', cat: (S.cats.out.find(c => c[0] === 'Gasolina') || S.cats.out[0])[0], amount: 0, name: '', pocket: 'disp' }; drawQuickForm(!!x); }
 function drawQuickForm(edit) {
   openSheet(`<div class="sh-head"><button onclick="quickList()">Atrás</button><h2>${edit ? 'Editar' : 'Nuevo'} atajo</h2><button onclick="saveQuick()">Guardar</button></div>
-  <div class="seg"><button class="${fq.type === 'out' ? 'on' : ''}" onclick="fqSync();fq.type='out';fq.cat=CATS.out[0][0];drawQuickForm(${edit})">Gasto</button><button class="${fq.type === 'in' ? 'on' : ''}" onclick="fqSync();fq.type='in';fq.cat=CATS.in[0][0];drawQuickForm(${edit})">Ingreso</button></div>
+  <div class="seg"><button class="${fq.type === 'out' ? 'on' : ''}" onclick="fqSync();fq.type='out';fq.cat=S.cats.out[0][0];drawQuickForm(${edit})">Gasto</button><button class="${fq.type === 'in' ? 'on' : ''}" onclick="fqSync();fq.type='in';fq.cat=S.cats.in[0][0];drawQuickForm(${edit})">Ingreso</button></div>
   <input class="amount" id="q_amt" inputmode="numeric" placeholder="$0" value="${fq.amount ? fq.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
-  <div class="chips">${CATS[fq.type].map(([c, e]) => `<button class="chip ${fq.cat === c ? 'on' : ''}" data-c="${c}" onclick="fq.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'))"><span>${e}</span>${c}</button>`).join('')}</div>
+  <div class="chips">${S.cats[fq.type].map(([c, e]) => `<button class="chip ${fq.cat === c ? 'on' : ''}" data-c="${c}" onclick="fq.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'))"><span>${e}</span>${c}</button>`).join('')}</div>
   <div class="form"><div class="field"><label>Nombre</label><input id="q_name" placeholder="Opcional, ej: Tanqueada" value="${esc(fq.name)}"></div>
   ${S.pockets.length > 1 ? `<div class="field"><label>${fq.type === 'in' ? 'Entra a' : 'Sale de'}</label><select id="q_pocket">${S.pockets.map(p => `<option value="${p.id}" ${(fq.pocket || 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>
   <button class="btn" onclick="saveQuick()">Guardar atajo</button>
@@ -862,9 +893,62 @@ async function quickAdd(id) {
   toast(`✅ ${x.name || x.cat} ${fmt(x.amount)}`, () => { S.movs = S.movs.filter(z => z.id !== m.id); save(); });
 }
 
+// --- Categorías ---
+let catType = 'out';
+const CAT_EMOJIS = ['🍔', '🛒', '🌐', '👨‍👩‍👧', '⛽', '👕', '🎬', '🍺', '💡', '💧', '🔥', '📱', '🏠', '🚌', '🚕', '💊', '🩺', '📚', '🎓', '🐶', '💇', '🎁', '🏋️', '✈️', '🎮', '☕', '🍕', '💳', '🧾', '📦', '💼', '📈', '🏷️', '💹', '💰', '🤝'];
+function catList() {
+  const L = S.cats[catType];
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>Categorías</h2><button onclick="catForm()">Nueva</button></div>
+  <div class="seg"><button class="${catType === 'out' ? 'on' : ''}" onclick="catType='out';catList()">Gastos</button><button class="${catType === 'in' ? 'on' : ''}" onclick="catType='in';catList()">Ingresos</button></div>
+  <div class="list">${L.map(([c, e], i) => `<div class="item"><div class="av">${e}</div><div class="mid" onclick="catForm(${i})"><b>${esc(c)}</b><small>${sum(S.movs.filter(m => m.type === catType && m.cat === c))
+      ? fmt(sum(S.movs.filter(m => m.type === catType && m.cat === c))) + ' registrados' : 'Sin movimientos'} · toca para editar</small></div>
+  ${L.length > 1 ? `<button onclick="delCat(${i})" style="border:0;background:rgba(255,59,48,.12);color:var(--red);width:34px;height:34px;border-radius:17px;font-size:18px">−</button>` : ''}</div>`).join('')}</div>
+  <button class="btn" onclick="catForm()">+ Nueva categoría de ${catType === 'out' ? 'gasto' : 'ingreso'}</button>
+  <div class="hint">Si borras una categoría, los movimientos que ya tenías no se borran: conservan su nombre.</div>`);
+}
+let fc = {};
+function catForm(i) {
+  const cur = i !== undefined ? S.cats[catType][i] : null;
+  fc = { i, name: cur ? cur[0] : '', emoji: cur ? cur[1] : '🏷️' };
+  openSheet(`<div class="sh-head"><button onclick="catList()">Atrás</button><h2>${cur ? 'Editar' : 'Nueva'} categoría</h2><button onclick="saveCat()">Guardar</button></div>
+  <div style="text-align:center;font-size:54px;margin:4px 0 10px" id="c_prev">${fc.emoji}</div>
+  <div class="emojis">${CAT_EMOJIS.map(e => `<button class="${fc.emoji === e ? 'on' : ''}" onclick="fc.emoji='${e}';$('#c_prev').textContent='${e}';document.querySelectorAll('.emojis button').forEach(b=>b.classList.toggle('on',b.textContent==='${e}'))">${e}</button>`).join('')}</div>
+  <div class="form"><div class="field"><label>Nombre</label><input id="c_name" placeholder="Ej: Servicios" value="${esc(fc.name)}" maxlength="20"></div>
+  <div class="field"><label>Otro emoji</label><input id="c_emoji" placeholder="Escribe uno" maxlength="8" oninput="if(this.value.trim()){fc.emoji=this.value.trim();$('#c_prev').textContent=fc.emoji}"></div></div>
+  <div class="hint">${cur ? 'Si cambias el nombre, también se actualiza en todos tus movimientos, fijos, atajos y límites.' : 'La verás al registrar ' + (catType === 'out' ? 'gastos' : 'ingresos') + ', en los reportes y en los límites.'}</div>
+  <button class="btn" onclick="saveCat()">Guardar</button>`);
+}
+function saveCat() {
+  const name = $('#c_name').value.replace(/['"\\<>`$]/g, '').trim().replace(/\s+/g, ' ');
+  if (!name) { toast('Ponle un nombre'); $('#c_name').focus(); return; }
+  const L = S.cats[catType];
+  if (L.some(([c], j) => c.toLowerCase() === name.toLowerCase() && j !== fc.i)) { toast('Ya existe esa categoría'); return; }
+  if (fc.i !== undefined) {
+    const old = L[fc.i][0]; L[fc.i] = [name, fc.emoji];
+    if (old !== name) {
+      S.movs.forEach(m => { if (m.type === catType && m.cat === old) m.cat = name; });
+      S.fixed.forEach(f => { if (f.type === catType && f.cat === old) f.cat = name; });
+      S.quick.forEach(q => { if (q.type === catType && q.cat === old) q.cat = name; });
+      if (catType === 'out' && S.settings.catLimits[old]) { S.settings.catLimits[name] = S.settings.catLimits[old]; delete S.settings.catLimits[old]; }
+    }
+  } else {
+    const iOtros = L.findIndex(([c]) => c === 'Otros');
+    if (iOtros >= 0) L.splice(iOtros, 0, [name, fc.emoji]); else L.push([name, fc.emoji]);
+  }
+  save(); catList(); toast('✅ Categoría guardada');
+}
+async function delCat(i) {
+  const [c, e] = S.cats[catType][i];
+  if (!await dialog({ icon: e, title: `¿Eliminar "${esc(c)}"?`, body: 'Tus movimientos con esta categoría se quedan como están.', ok: 'Eliminar', danger: true })) return;
+  S.cats[catType].splice(i, 1);
+  if (catType === 'out') delete S.settings.catLimits[c];
+  save(); catList();
+}
+
 // --- Ajustes ---
-function setBudget() { S.settings.budget = parseAmt($('#s_budget').value); save(); toast('✅ Presupuesto actualizado'); }
-function setCatLimit(c, v) { const n = parseAmt(v); if (n) S.settings.catLimits[c] = n; else delete S.settings.catLimits[c]; save(); }
+let budT;
+function setBudget() { S.settings.budget = parseAmt($('#s_budget').value); saveQuiet(); clearTimeout(budT); budT = setTimeout(() => toast('✅ Presupuesto guardado: ' + fmt(S.settings.budget)), 900); }
+function setCatLimit(c, v) { const n = parseAmt(v); if (n) S.settings.catLimits[c] = n; else delete S.settings.catLimits[c]; saveQuiet(); }
 async function connect() {
   conn = { url: $('#c_url').value.trim(), key: $('#c_key').value.trim() };
   localStorage.setItem(CONN, JSON.stringify(conn));
