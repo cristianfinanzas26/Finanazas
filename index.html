@@ -237,7 +237,7 @@ async function push() {
   if (!conn.url) return;
   try {
     const r = await fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: conn.key || '', data: S }) });
-    const j = await r.json(); if (!j.ok) throw new Error(j.error); setSync('ok'); return true;
+    const j = await r.json(); if (!j.ok) throw new Error(j.error); setSync('ok'); if (j.merged) pull(); return true;
   } catch (e) { setSync('error'); return false; }
 }
 async function pull() {
@@ -247,7 +247,7 @@ async function pull() {
     const r = await fetch(conn.url + '?key=' + encodeURIComponent(conn.key || '') + '&t=' + Date.now());
     const j = await r.json(); if (!j.ok) throw new Error(j.error);
     const remote = j.data;
-    if (remote && remote.updatedAt > S.updatedAt) { S = normalize(remote); persistLocal(); render(); setSync('ok'); }
+    if (remote && remote.updatedAt > S.updatedAt) { S = normalize(remote); persistLocal(); render(); setSync('ok'); if (j.pend) await push(); }
     else if (!remote || S.updatedAt > remote.updatedAt) { await push(); }
     else setSync('ok');
     runFixed();
