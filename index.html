@@ -85,7 +85,8 @@ main{padding:4px 16px calc(120px + env(safe-area-inset-bottom));max-width:640px;
 .ov .bg{position:absolute;inset:0;background:rgba(0,0,0,.4);opacity:0;transition:opacity .25s}
 .ov.show .bg{opacity:1}
 .sheet{position:absolute;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);max-width:640px;margin:0 auto;-webkit-overflow-scrolling:touch}
-.ov.show .sheet{transform:none}
+.ov .sheet{visibility:hidden;transition:transform .3s cubic-bezier(.2,.9,.3,1),visibility 0s .3s}
+.ov.show .sheet{transform:none;visibility:visible;transition:transform .3s cubic-bezier(.2,.9,.3,1)}
 .grab{width:38px;height:5px;border-radius:3px;background:var(--sep);margin:0 auto 10px}
 .sh-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .sh-head h2{font-size:18px;font-weight:600}
@@ -119,7 +120,7 @@ main{padding:4px 16px calc(120px + env(safe-area-inset-bottom));max-width:640px;
 .dlg p{font-size:15px;color:var(--sub);line-height:1.4;margin-bottom:8px}
 .dlg .acts{display:flex;gap:10px;margin-top:14px}
 .dlg .acts .btn{margin:0;padding:13px;font-size:16px}
-.toast{border:1px solid var(--line);display:flex;align-items:center;position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-120px);background:var(--card);color:var(--text);padding:12px 18px;border-radius:24px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-size:15px;font-weight:500;z-index:90;transition:transform .35s cubic-bezier(.2,.9,.3,1);white-space:nowrap}
+.toast{border:1px solid var(--line);display:flex;align-items:center;position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-120px);background:var(--card);color:var(--text);padding:12px 18px;border-radius:24px;box-shadow:0 8px 28px rgba(0,0,0,.18);font-size:15px;font-weight:500;z-index:90;transition:transform .35s cubic-bezier(.2,.9,.3,1);white-space:normal;text-align:center;width:max-content;max-width:calc(100% - 32px)}
 .toast.show{transform:translate(-50%,0)}
 /* lock */
 .lock{position:fixed;inset:0;z-index:100;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px}
@@ -134,6 +135,8 @@ main{padding:4px 16px calc(120px + env(safe-area-inset-bottom));max-width:640px;
 .pad button{width:76px;height:76px;border-radius:38px;border:0;background:var(--white);box-shadow:inset 0 0 0 1px var(--line);font-size:30px}
 .pad button.nb{background:none;font-size:16px}
 .pad button:active{background:var(--sep)}
+.chk{flex:none;width:28px;height:28px;border-radius:9px;border:2px solid var(--line);background:var(--white);color:#fff;font-weight:700;font-size:16px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.chk.on{background:var(--primary);border-color:var(--primary)}
 .prog{display:flex;justify-content:space-between;font-size:13px;color:var(--sub)}
 .goalcard{cursor:pointer}
 .goalcard .h{display:flex;align-items:center;gap:12px}
@@ -155,10 +158,11 @@ details summary{list-style:none;cursor:pointer}
 .qchip.add{color:var(--blue);font-weight:600;font-size:14px}
 .qchip:active{transform:scale(.96)}
 .search{width:100%;border:0;background:var(--white);box-shadow:inset 0 0 0 1px var(--line);border-radius:12px;padding:10px 12px 10px 36px;margin-bottom:14px;outline:none;font-size:16px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:11px center;background-size:17px}
-.sw{position:relative;width:51px;height:31px;flex:none}.sw input{opacity:0;width:0;height:0}
+.sw{position:relative;display:inline-block;width:51px;height:31px;flex:none;vertical-align:middle}.sw input{opacity:0;width:0;height:0}
 .sw i{position:absolute;inset:0;border-radius:16px;background:var(--fill);transition:.2s}
 .sw i:before{content:"";position:absolute;width:27px;height:27px;left:2px;top:2px;border-radius:14px;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:.2s}
-.sw input:checked+i{background:var(--primary)}.sw input:checked+i:before{transform:translateX(20px)}
+.sw input:checked+i{background:var(--primary)}
+.field label.sw{min-width:0;width:51px}.sw input:checked+i:before{transform:translateX(20px)}
 .toast button{border:0;background:none;color:var(--blue);font-weight:600;margin-left:10px;font-size:15px}
 details summary::-webkit-details-marker{display:none}
 </style>
@@ -173,7 +177,7 @@ details summary::-webkit-details-marker{display:none}
   <button class="tab" data-v="movs" onclick="go('movs')"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Movimientos</button>
   <button class="tab" data-v="debts" onclick="go('debts')"><svg viewBox="0 0 24 24"><path d="M4 8h15l-4-4M20 16H5l4 4"/></svg>Deudas</button>
   <button class="tab" data-v="savings" onclick="go('savings')"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M6 6l9-3 2 3M15.5 15h2"/></svg>Bolsillos</button>
-  <button class="tab" data-v="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Ajustes</button>
+  <button class="tab" data-v="settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>Más</button>
 </nav>
 
 <div class="ov" id="ov"><div class="bg" onclick="closeSheet()"></div><div class="sheet" id="sheet"></div></div>
@@ -202,7 +206,8 @@ const daysTo = d => Math.round((new Date(d + 'T12:00') - new Date(today() + 'T12
 const parseAmt = v => Number(String(v).replace(/\D/g, '')) || 0;
 function fmtInput(el) { const n = parseAmt(el.value); el.value = n ? n.toLocaleString('es-CO') : ''; }
 
-const DEF_CATS = {
+/* Sugerencias opcionales: solo se cargan si el usuario toca "Cargar sugerencias" */
+const SUG_CATS = {
   out: [['Comida', '🍔'], ['Compras', '🛒'], ['Internet', '🌐'], ['Familia', '👨‍👩‍👧'], ['Gasolina', '⛽'], ['Ropa', '👕'], ['Cine', '🎬'], ['Bebidas', '🍺'], ['Otros', '📦']],
   in: [['Salario', '💼'], ['Negocio', '📈'], ['Ventas', '🏷️'], ['Rendimientos', '💹'], ['Regalo', '🎁'], ['Otros', '💰']]
 };
@@ -214,22 +219,28 @@ const COLORS = ['#1F7A52', '#2F6F8F', '#B7791F', '#8A5A9E', '#4E9F76', '#A3485F'
 
 /* ============ Datos ============ */
 const KEY = 'misfinanzas_v1', CONN = 'misfinanzas_conn';
-const DEF_POCKETS = () => [{ id: 'disp', name: 'Disponible', emoji: '💵', initial: 0, target: 0 }, { id: 'ahorro', name: 'Ahorro', emoji: '🐷', initial: 0, target: 0 }, { id: 'inv', name: 'Inversión', emoji: '📈', initial: 0, target: 0 }];
-const blank = () => ({ v: 1, updatedAt: 0, settings: { budget: 0, alertPct: 80, catLimits: {}, pin: '', mailDaily: true, mailMonthly: true }, movs: [], debts: [], pockets: DEF_POCKETS(), transfers: [], fixed: [], quick: [], cats: JSON.parse(JSON.stringify(DEF_CATS)) });
+const BASE_POCKET = () => ({ id: 'disp', name: 'Principal', emoji: '💵', initial: 0, target: 0, pct: 0 });
+const OLD_POCKETS = () => [{ id: 'disp', name: 'Disponible', emoji: '💵', initial: 0, target: 0 }, { id: 'ahorro', name: 'Ahorro', emoji: '🐷', initial: 0, target: 0 }, { id: 'inv', name: 'Inversión', emoji: '📈', initial: 0, target: 0 }];
+const clone = o => JSON.parse(JSON.stringify(o));
+const blank = () => ({ v: 1, updatedAt: 0, settings: { budget: 0, alertPct: 80, catLimits: {}, pin: '', mailDaily: true, mailMonthly: true, splitCats: [], expectedIncome: 0, weeklyLimit: 0, weekStart: 1, extraPocket: '', mailHour: 20, tz: '' }, movs: [], debts: [], pockets: [BASE_POCKET()], transfers: [], fixed: [], quick: [], recur: [], specials: [], cats: { out: [], in: [] } });
 function normalize(s) {
-  s = s || {}; const had = Array.isArray(s.pockets);
+  s = s || {}; const had = Array.isArray(s.pockets), hadCats = s.cats && s.cats.out && s.cats.in;
+  const old = (s.movs || []).length > 0 || (s.debts || []).length > 0; // usuario de versiones anteriores
   s = Object.assign(blank(), s); s.settings = Object.assign(blank().settings, s.settings || {});
-  if (!had) s.pockets = DEF_POCKETS();
-  if (!s.pockets.find(p => p.id === 'disp')) s.pockets.unshift(DEF_POCKETS()[0]);
-  if (!s.cats || !s.cats.out || !s.cats.in) s.cats = JSON.parse(JSON.stringify(DEF_CATS));
-  s.transfers = s.transfers || []; s.fixed = s.fixed || []; s.quick = s.quick || [];
+  if (!Array.isArray(s.settings.splitCats)) s.settings.splitCats = [];
+  if (!had) s.pockets = old ? OLD_POCKETS() : [BASE_POCKET()];
+  if (!s.pockets.find(p => p.id === 'disp')) s.pockets.unshift(BASE_POCKET());
+  s.pockets.forEach(p => { if (typeof p.pct !== 'number') p.pct = 0; });
+  if (!hadCats) s.cats = old ? clone(SUG_CATS) : { out: [], in: [] };
+  s.transfers = s.transfers || []; s.fixed = s.fixed || []; s.quick = s.quick || []; s.recur = s.recur || []; s.specials = s.specials || [];
+  try { s.settings.tz = Intl.DateTimeFormat().resolvedOptions().timeZone || s.settings.tz; } catch (e) { }
   if (s.goals && s.goals.length) { // migrar metas antiguas a bolsillos
     s.goals.forEach(g => {
       if (!s.pockets.find(p => p.id === g.id)) s.pockets.push({ id: g.id, name: g.name, emoji: g.emoji || '🎯', initial: 0, target: g.target || 0 });
       (g.entries || []).forEach(e => s.transfers.push({ id: e.id, from: e.amount > 0 ? 'disp' : g.id, to: e.amount > 0 ? g.id : 'disp', amount: Math.abs(e.amount), date: e.date, note: '' }));
     });
   }
-  delete s.goals; return s;
+  delete s.goals; delete s.planSnapshot; return s;
 }
 function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v) return normalize(s); } catch (e) { } return blank(); }
 let S = load();
@@ -250,7 +261,7 @@ async function push() {
   if (!conn.url) return;
   try {
     const sent = S.updatedAt;
-    const r = await fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: conn.key || '', data: S }) });
+    const r = await fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ key: conn.key || '', data: Object.assign({}, S, { planSnapshot: planSnapshot() }) }) });
     const j = await r.json(); if (!j.ok) throw new Error(j.error);
     if (S.updatedAt === sent) setDirty(false);
     setSync('ok'); if (j.merged) pull(); return true;
@@ -272,7 +283,7 @@ async function pull() {
     else if (remote && remote.updatedAt > S.updatedAt) { S = normalize(remote); persistLocal(); render(); setSync('ok'); if (j.pend) await push(); }
     else if (!remote || S.updatedAt > remote.updatedAt) { await push(); }
     else setSync('ok');
-    runFixed();
+    runFixed(); applySplits();
     return true;
   } catch (e) { setSync('error'); runFixed(); return false; }
 }
@@ -281,12 +292,32 @@ async function pull() {
 const curM = () => mkey(today());
 const movsOf = k => S.movs.filter(m => mkey(m.date) === k);
 const paid = d => sum(d.payments || []);
-const pending = d => Math.max(0, d.amount - paid(d));
+const pending = d => Math.max(0, d.amount + sum(d.adjust || []) - paid(d));
 const openDebts = dir => S.debts.filter(d => d.dir === dir && !d.closed);
+const firstCat = t => ((S.cats[t] || [])[0] || ['Sin categoría'])[0];
+const pctSum = () => Math.round(sum(S.pockets, p => p.pct || 0) * 100) / 100;
+const isSplitCat = c => S.settings.splitCats.includes(c);
+function makeSplit(amount) {
+  const ps = S.pockets.filter(p => p.pct > 0), tot = sum(ps, p => p.pct);
+  if (!ps.length || !tot) return null;
+  const parts = ps.map(p => ({ p: p.id, a: Math.floor(amount * p.pct / tot) }));
+  const rest = amount - sum(parts, x => x.a);
+  parts.sort((x, y) => pk(y.p).pct - pk(x.p).pct)[0].a += rest; // el sobrante de redondeo va al bolsillo con mayor %
+  return parts;
+}
+function applySplits() { // ingresos llegados por el atajo del iPhone
+  let ch = false;
+  S.movs.forEach(m => { if (m.type === 'in' && !m.split && !m.noSplit && /^a/.test(m.id) && isSplitCat(m.cat)) { const sp = makeSplit(m.amount); if (sp) { m.split = sp; m.pocket = 'split'; ch = true; } } });
+  if (ch) save();
+}
+const pocketSpent = (id, k = curM()) => sum(movsOf(k).filter(m => m.type === 'out' && (m.pocket || 'disp') === id));
+const parsePct = v => { const n = parseFloat(String(v).replace(',', '.').replace(/[^\d.]/g, '')); return isNaN(n) ? 0 : Math.round(n * 100) / 100; };
+const pctTxt2 = n => String(n).replace('.', ',') + ' %';
 const pk = id => S.pockets.find(p => p.id === id) || { id, name: 'Bolsillo eliminado', emoji: '❔', initial: 0 };
 function pocketBal(id) {
   const p = pk(id), mp = m => (m.pocket || 'disp') === id;
-  return (p.initial || 0) + sum(S.movs.filter(m => m.type === 'in' && mp(m))) - sum(S.movs.filter(m => m.type === 'out' && mp(m)))
+  return (p.initial || 0) + sum(S.movs.filter(m => m.type === 'in' && !m.split && mp(m))) - sum(S.movs.filter(m => m.type === 'out' && mp(m)))
+    + sum(S.movs.filter(m => m.type === 'in' && m.split).flatMap(m => m.split.filter(x => x.p === id)), x => x.a)
     + sum(S.transfers.filter(t => t.to === id)) - sum(S.transfers.filter(t => t.from === id))
     + sum(S.debts.filter(d => d.pocket === id), d => d.dir === 'owe' ? d.amount : -d.amount)
     + sum(S.debts.flatMap(d => (d.payments || []).filter(p => p.pocket === id).map(p => ({ amount: d.dir === 'owed' ? p.amount : -p.amount }))));
@@ -313,10 +344,10 @@ const fixDate = (k, day) => k + '-' + String(Math.min(day, dim(k))).padStart(2, 
 const activeFixed = () => S.fixed.filter(f => f.active !== false);
 function runFixed() {
   const k = curM(), t = today(), added = [];
-  activeFixed().forEach(f => {
+  activeFixed().filter(f => (f.mode || 'auto') === 'auto' && f.kind !== 'variable').forEach(f => {
     if (f.lastMonth === k) return;
     const d = fixDate(k, f.day); if (d > t) return;
-    if (!S.movs.some(m => m.fixed === f.id && mkey(m.date) === k)) { S.movs.push({ id: uid(), type: f.type, amount: f.amount, cat: f.cat, note: f.name, date: d, pocket: f.pocket || 'disp', fixed: f.id }); added.push(f.name); }
+    if (!S.movs.some(m => m.fixed === f.id && mkey(m.date) === k)) { { const nm = { id: uid(), type: f.type, amount: f.amount, cat: f.cat, note: f.name, date: d, pocket: f.pocket || 'disp', fixed: f.id }; if (nm.type === 'in' && isSplitCat(nm.cat)) { const sp = makeSplit(nm.amount); if (sp) { nm.split = sp; nm.pocket = 'split'; } } S.movs.push(nm); } added.push(f.name); }
     f.lastMonth = k;
   });
   if (added.length) { save(); toast('🔁 Registrado: ' + added.join(', ')); }
@@ -335,15 +366,34 @@ function projection() {
 const norm = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const pctTxt = (a, b) => b ? (a >= b ? '+' : '−') + Math.abs(Math.round((a - b) / b * 100)) + '%' : (a ? 'nuevo' : '0%');
 function budgetInfo(k = curM()) {
-  const B = S.settings.budget || 0, spent = sum(movsOf(k).filter(m => m.type === 'out'));
+  const B = S.settings.budget || 0, spent = sum(movsOf(k).filter(m => m.type === 'out' && !m.special));
   const pct = B ? spent / B : 0;
   const lvl = !B ? 'none' : pct > 1 ? 'red' : pct >= S.settings.alertPct / 100 ? 'orange' : 'green';
   return { B, spent, pct, lvl, left: B - spent };
 }
 function catSpent(k, cat, exclude) { return sum(movsOf(k).filter(m => m.type === 'out' && m.cat === cat && m.id !== exclude)); }
-function checkBudget(amount, cat, date, excludeId) {
+function checkBudget(amount, cat, date, excludeId, ctx = {}) {
   const k = mkey(date), msgs = [], A = S.settings.alertPct / 100;
-  const spent = sum(movsOf(k).filter(m => m.type === 'out' && m.id !== excludeId));
+  // presupuesto especial: se controla con sus propios topes
+  if (ctx.special) {
+    const sp = S.specials.find(x => x.id === ctx.special);
+    if (sp) {
+      const si = specialInfo(sp, amount, ctx.scat, excludeId), c = si.cats.find(x => x.name === ctx.scat);
+      if (si.spent > sp.total) msgs.push({ lvl: 'red', t: `En <b>${esc(sp.name)}</b> te pasas del total (${fmt(sp.total)}) por <b>${fmt(si.spent - sp.total)}</b>.` });
+      else if (si.spent >= sp.total * .8) msgs.push({ lvl: 'orange', t: `En <b>${esc(sp.name)}</b> llegarás al <b>${Math.round(si.spent / sp.total * 100)} %</b>. Te quedarían ${fmt(sp.total - si.spent)}.` });
+      if (c && c.cap) { if (c.spent > c.cap) msgs.push({ lvl: 'red', t: `<b>${esc(c.name)}</b>: te pasas del tope (${fmt(c.cap)}) por <b>${fmt(c.spent - c.cap)}</b>.` }); else if (c.spent >= c.cap * .8) msgs.push({ lvl: 'orange', t: `<b>${esc(c.name)}</b>: llegarás al ${Math.round(c.spent / c.cap * 100)} % del tope.` }); }
+    }
+    return msgs;
+  }
+  if (ctx.recur) {
+    const r = S.recur.find(x => x.id === ctx.recur);
+    if (r) { const ri = recurInfo(r, date, amount, excludeId); if (ri.avail < 0) msgs.push({ lvl: 'red', t: `<b>${esc(r.name)}</b>: te pasas de lo disponible por <b>${fmt(-ri.avail)}</b>.` }); else if (ri.avail < (r.cap + Math.max(0, ri.carried)) * .2) msgs.push({ lvl: 'orange', t: `<b>${esc(r.name)}</b>: te quedarían ${fmt(ri.avail)}.` }); }
+  }
+  if (!ctx.fixed) {
+    const w = weekInfo(date, amount, excludeId);
+    if (w.L) { if (w.spent > w.L) msgs.push({ lvl: 'red', t: `Te pasas del <b>límite semanal</b> (${fmt(w.L)}) por <b>${fmt(w.spent - w.L)}</b>.` }); else if (w.spent >= w.L * .8) msgs.push({ lvl: 'orange', t: `Llegarás al <b>${Math.round(w.pct * 100)} %</b> de tu límite semanal. Te quedarían ${fmt(w.L - w.spent)}.` }); }
+  }
+  const spent = sum(movsOf(k).filter(m => m.type === 'out' && !m.special && m.id !== excludeId));
   const total = spent + amount, B = S.settings.budget;
   if (B > 0) {
     if (total > B) msgs.push({ lvl: 'red', t: `Con este gasto <b>te pasas de tu presupuesto</b> del mes por <b>${fmt(total - B)}</b>.` });
@@ -361,9 +411,9 @@ const lvlColor = l => l === 'red' ? 'var(--red)' : l === 'orange' ? 'var(--orang
 const lvlSoft = l => l === 'red' ? 'var(--over-soft)' : l === 'orange' ? 'var(--warn-soft)' : 'var(--primary-soft)';
 
 /* ============ Navegación ============ */
-let view = 'home', movMonth = curM(), debtDir = 'owed', movTab = 'mes', cmpMonth = curM(), rFrom = curM() + '-01', rTo = today();
+let view = 'home', movMonth = curM(), debtDir = 'owe', movTab = 'mes', cmpMonth = curM(), rFrom = curM() + '-01', rTo = today();
 function go(v) { view = v; window.scrollTo(0, 0); render(); }
-function fabAction() { if (view === 'debts') debtForm(); else if (view === 'savings') pocketForm(); else movForm(); }
+function fabAction() { if (view === 'debts') { if (debtDir === 'plan') debtDir = 'owe'; debtForm(); } else if (view === 'savings') pocketForm(); else movForm(); }
 
 function header(title, sub) {
   return `<div class="top"><div><div class="sm">${sub || ''}</div><h1>${title}</h1></div>
@@ -380,7 +430,7 @@ function render() {
 /* ============ Vistas ============ */
 function movItem(m) {
   return `<div class="item" onclick="movForm('${m.id}')"><div class="av">${emojiOf(m.type, m.cat)}</div>
-  <div class="mid"><b>${esc(m.note || m.cat)}</b><small>${m.fixed ? '🔁 ' : ''}${esc(m.cat)} · ${dshort(m.date)}</small></div>
+  <div class="mid"><b>${esc(m.note || m.cat)}</b><small>${m.fixed ? '🔁 ' : ''}${esc(m.cat)} · ${dshort(m.date)}${m.split ? ' · repartido' : ''}${m.recur ? ' · ' + esc((S.recur.find(r => r.id === m.recur) || { name: '' }).name) : ''}${m.special ? ' · ' + esc((S.specials.find(x => x.id === m.special) || { name: '' }).name) : ''}</small></div>
   <div class="amt ${m.type === 'in' ? 'pos' : 'neg'}">${m.type === 'in' ? '+' : '−'}${fmt(m.amount).replace('-', '')}</div></div>`;
 }
 
@@ -405,13 +455,18 @@ function vHome() {
     h += `<div class="alert ${n < 0 ? 'red' : 'blue'}" onclick="debtDetail('${d.id}')"><span class="ic">${d.dir === 'owed' ? '🤝' : '📅'}</span><div><b>${d.dir === 'owed' ? esc(d.person) + ' te debe ' : 'Le debes a ' + esc(d.person) + ' '}${fmt(pending(d))}</b><br>${when}.</div></div>`;
   });
 
-  const up = upcoming(7);
-  if (up.length) h += `<div class="card" onclick="fixedList()" style="cursor:pointer"><div class="b-title"><span>🔁 Próximos pagos fijos</span><span class="muted">${fmt(sum(up.filter(x => x.f.type === 'out'), x => x.f.amount))}</span></div>
-  ${up.map(x => `<div class="item" style="padding:10px 0 0;cursor:pointer"><div class="av" style="width:32px;height:32px;font-size:17px">${emojiOf(x.f.type, x.f.cat)}</div><div class="mid"><b>${esc(x.f.name)}</b><small>${x.n === 0 ? 'Hoy' : x.n === 1 ? 'Mañana' : 'En ' + x.n + ' días'} · ${dshort(x.d)}</small></div><div class="amt ${x.f.type === 'in' ? 'pos' : ''}">${fmt(x.f.amount)}</div></div>`).join('')}</div>`;
+  const wk = weekInfo();
+  if (wk.lvl === 'red') h += `<div class="alert red" onclick="weekForm()"><span class="ic">🚨</span><div><b>Te pasaste del límite semanal</b><br>${fmt(wk.spent)} de ${fmt(wk.L)} (${fmt(-wk.left)} de más).</div></div>`;
+  else if (wk.lvl === 'orange') h += `<div class="alert orange" onclick="weekForm()"><span class="ic">⚠️</span><div><b>Vas en el ${Math.round(wk.pct * 100)} % del límite semanal</b><br>Te quedan ${fmt(wk.left)} esta semana.</div></div>`;
+  const mp = monthPayments(), mpend = mp.filter(x => !x.paid);
+  if (mp.length) h += `<div class="card" onclick="monthPaySheet()" style="cursor:pointer"><div class="b-title"><span>✅ Pagos del mes</span><span class="muted" style="font-weight:500">${mp.length - mpend.length}/${mp.length} · falta ${fmt(sum(mpend, x => x.amount))}</span></div>
+  <div class="bar"><i style="width:${(mp.length - mpend.length) / mp.length * 100}%;background:var(--primary)"></i></div>
+  ${mpend.slice(0, 3).map(x => `<div class="prog" style="color:var(--text);padding:3px 0"><span>${x.date < today() ? '<span class="red">●</span> ' : ''}${x.kind === 'fixed' ? emojiOf('out', x.f.cat) + ' ' + esc(x.f.name) : '💳 ' + esc(x.it.d.person)} <span class="muted">día ${+x.date.slice(8)}</span></span><b>${fmt(x.amount)}</b></div>`).join('')}
+  ${mpend.length > 3 ? `<div class="muted" style="font-size:13px;margin-top:4px">y ${mpend.length - 3} más…</div>` : !mpend.length ? '<div class="pos" style="font-size:14px;margin-top:2px">🎉 Todo pagado este mes</div>' : ''}</div>`;
 
   // Hero
-  const disp = pocketBal('disp');
-  h += `<div class="card hero" onclick="pocketDetail('disp')"><div class="lbl">💵 Disponible</div><div class="big" style="margin-bottom:4px">${fmt(disp)}</div>
+  const disp = sum(S.pockets, p => pocketBal(p.id));
+  h += `<div class="card hero" onclick="go('savings')"><div class="lbl">👛 Total en tus bolsillos</div><div class="big" style="margin-bottom:4px">${fmt(disp)}</div>
   <div class="lbl" style="margin-bottom:14px">Balance del mes: <b>${inc - out >= 0 ? '+' : ''}${fmt(inc - out)}</b></div>
   <div class="row"><div class="pill"><small>↑ Ingresos</small><b>${fmt(inc)}</b></div><div class="pill"><small>↓ Gastos</small><b>${fmt(out)}</b></div></div></div>`;
 
@@ -427,6 +482,12 @@ function vHome() {
     h += `<div class="card" onclick="go('settings')" style="cursor:pointer"><div class="b-title"><span>🎯 Define tu presupuesto</span><span style="color:var(--blue)">›</span></div>
     <div class="muted" style="margin-top:6px">Ponle un límite mensual y te aviso antes de pasarte.</div>${projLine(0)}</div>`;
   }
+
+  h += weekCard();
+  specialsOn(today()).forEach(sp => { h += specialCard(sp); });
+  if (S.recur.length) h += `<div class="card" onclick="recurList()" style="cursor:pointer"><div class="b-title" style="margin-bottom:6px"><span>🍽️ Recurrentes</span></div>${S.recur.map(r => { const ri = recurInfo(r); return `<div class="prog" style="color:var(--text);padding:3px 0"><span>${r.emoji || '🔁'} ${esc(r.name)}${ri.carried > 0 ? ` <span class="tag green">+${fmt(ri.carried)} acumulado</span>` : ''}</span><b class="${ri.avail < 0 ? 'red' : ''}">${fmt(ri.avail)}</b></div>`; }).join('')}</div>`;
+  if (planDebts().some(d => !d.closed)) { const pi = planInfo(); h += `<div class="card soft" onclick="debtDir='plan';go('debts')" style="cursor:pointer"><div class="b-title"><span>💳 Plan de deudas</span><span class="badge" style="background:var(--white);color:var(--primary)">${Math.round(pi.progress * 100)} %</span></div>
+  <div class="bar" style="background:var(--white)"><i style="width:${pi.progress * 100}%;background:var(--primary)"></i></div><div class="muted">${pi.freeExtra ? `Libre en <b style="color:var(--text)">${monthName(pi.freeExtra).toLowerCase()}</b> · ` : ''}faltan ${fmt(pi.totalLeft)}</div></div>`; }
 
   // Resumen
   const owed = sum(openDebts('owed'), pending), owe = sum(openDebts('owe'), pending), sv = sum(S.pockets.filter(p => p.id !== 'disp'), p => pocketBal(p.id));
@@ -570,51 +631,73 @@ function debtItem(d) {
   <div class="amt ${d.closed ? 'muted' : d.dir === 'owed' ? 'pos' : 'red'}">${fmt(p)}</div></div>`;
 }
 function vDebts() {
+  let h = header('Deudas');
+  h += `<div class="seg"><button class="${debtDir === 'owe' ? 'on' : ''}" onclick="debtDir='owe';render()">Debo</button><button class="${debtDir === 'plan' ? 'on' : ''}" onclick="debtDir='plan';render()">Plan</button><button class="${debtDir === 'owed' ? 'on' : ''}" onclick="debtDir='owed';render()">Me deben</button></div>`;
+  if (debtDir === 'plan') return h + vPlan();
   const open = openDebts(debtDir).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
   const closed = S.debts.filter(d => d.dir === debtDir && d.closed);
-  let h = header('Deudas');
-  h += `<div class="seg"><button class="${debtDir === 'owed' ? 'on' : ''}" onclick="debtDir='owed';render()">Me deben</button><button class="${debtDir === 'owe' ? 'on' : ''}" onclick="debtDir='owe';render()">Debo</button></div>`;
+  const pi = debtDir === 'owe' ? planInfo() : null;
   h += `<div class="card" style="text-align:center"><div class="muted">${debtDir === 'owed' ? 'Total que me deben' : 'Total que debo'}</div>
   <div style="font-size:34px;font-weight:700;letter-spacing:-1px;margin-top:4px" class="${debtDir === 'owed' ? 'pos' : 'red'}">${fmt(sum(open, pending))}</div>
-  <div class="muted">${open.length} pendiente${open.length === 1 ? '' : 's'}</div></div>`;
-  h += open.length ? `<div class="list">${open.map(debtItem).join('')}</div>`
+  <div class="muted">${open.length} pendiente${open.length === 1 ? '' : 's'}${pi && pi.freeExtra ? ` · libre en ${monthName(pi.freeExtra).toLowerCase()}` : ''}</div></div>`;
+  const item = d => debtDir === 'owe' && d.cuota ? debtOweItem(d, pi) : debtItem(d);
+  h += open.length ? `<div class="list">${open.map(item).join('')}</div>`
     : `<div class="card empty"><span class="e">${debtDir === 'owed' ? '🤝' : '🎉'}</span>${debtDir === 'owed' ? 'Nadie te debe. Toca <b>+</b> para registrar un préstamo.' : 'No debes nada. Toca <b>+</b> si tienes una deuda.'}</div>`;
-  if (closed.length) h += `<details><summary class="sect">Pagadas (${closed.length}) <a>Mostrar</a></summary><div class="list">${closed.map(debtItem).join('')}</div></details>`;
+  if (debtDir === 'owe' && open.length) h += `<div class="hint">Toca una deuda para ver su detalle, registrar abonos o actualizar el saldo real que te da el banco.</div>`;
+  if (closed.length) h += `<details><summary class="sect">Pagadas (${closed.length}) <a>Mostrar</a></summary><div class="list">${closed.map(item).join('')}</div></details>`;
   return h;
 }
 
 function vPockets() {
   let h = header('Bolsillos');
-  const total = sum(S.pockets, p => pocketBal(p.id));
-  h += `<div class="card hero" ><div class="lbl">Total en tus bolsillos</div><div class="big" style="margin-bottom:4px">${fmt(total)}</div><div class="lbl">${S.pockets.length} bolsillos</div></div>`;
+  const total = sum(S.pockets, p => pocketBal(p.id)), ps = pctSum(), exp = S.settings.expectedIncome || 0;
+  h += `<div class="card hero"><div class="lbl">Total en tus bolsillos</div><div class="big" style="margin-bottom:4px">${fmt(total)}</div><div class="lbl">${S.pockets.length} bolsillo${S.pockets.length === 1 ? '' : 's'} · gastado este mes ${fmt(sum(S.pockets, p => pocketSpent(p.id)))}</div></div>`;
+  // estado del reparto
+  const okPct = ps === 100;
+  h += `<div class="card ${okPct ? 'soft' : ''}" style="${okPct ? '' : 'border-color:var(--warn);background:var(--warn-soft)'}">
+  <div class="b-title"><span>${okPct ? '✅' : '⚠️'} Reparto de ingresos</span><span class="badge" style="background:${okPct ? 'var(--white)' : 'var(--white)'};color:${okPct ? 'var(--primary)' : 'var(--warn)'}">${pctTxt2(ps)}</span></div>
+  <div class="bar" style="background:var(--white)">${S.pockets.filter(p => p.pct > 0).map((p, i) => `<i style="display:inline-block;width:${Math.min(100, p.pct)}%;background:${COLORS[i % 10]};border-radius:0"></i>`).join('')}</div>
+  <div class="muted" style="font-size:13px">${okPct ? 'Tus bolsillos suman 100 %. Cada ingreso de las categorías marcadas se reparte solo.' : ps > 100 ? `Te pasas por ${pctTxt2(Math.round((ps - 100) * 100) / 100)}. Ajusta los % para que sumen 100 %.` : `Falta asignar ${pctTxt2(Math.round((100 - ps) * 100) / 100)} para llegar a 100 %.`}</div>
+  <div class="muted" style="font-size:13px;margin-top:6px">Se reparten: ${S.settings.splitCats.length ? S.settings.splitCats.map(c => `<b style="color:var(--text)">${emojiOf('in', c)} ${esc(c)}</b>`).join(', ') : '<b style="color:var(--warn)">ninguna categoría aún</b>'} · <a style="color:var(--primary);font-weight:600" onclick="catType='in';catList()">Elegir</a></div></div>`;
+  h += `<div class="form"><div class="field" onclick="expectedForm()" style="cursor:pointer"><label style="flex:1">💼 Ingreso mensual esperado</label><b style="color:var(--primary)">${exp ? fmt(exp) : 'Definir'}</b><span class="muted">›</span></div></div>
+  <div class="hint">Sirve para calcular cuánto va a cada bolsillo al mes y para el plan de deudas.</div>`;
   h += `<button class="btn" onclick="transferForm()">⇄ Mover dinero entre bolsillos</button>`;
   h += `<div class="list" style="margin-top:14px">` + S.pockets.map(p => {
-    const b = pocketBal(p.id), pr = p.target ? Math.min(1, b / p.target) : 0;
-    return `<div class="item" onclick="pocketDetail('${p.id}')"><div class="av">${p.emoji}</div><div class="mid"><b>${esc(p.name)}</b>
-    <small>${p.target ? `${Math.round(pr * 100)}% de la meta ${fmt(p.target)}` : p.id === 'disp' ? 'Aquí entran tus ingresos' : 'Toca para meter o sacar'}</small>
-    ${p.target ? `<div class="bar" style="height:5px;margin:6px 0 0"><i style="width:${pr * 100}%;background:var(--green)"></i></div>` : ''}</div>
-    <div class="amt ${b < 0 ? 'red' : ''}">${fmt(b)}</div></div>`;
-  }).join('') + `</div><div class="hint">Toca <b>+</b> para crear otro bolsillo (ej: Viaje, Emergencias, Moto) con meta opcional.</div>`;
+    const b = pocketBal(p.id), sp = pocketSpent(p.id), pr = p.target ? Math.min(1, b / p.target) : 0;
+    return `<div class="item" onclick="pocketDetail('${p.id}')"><div class="av">${p.emoji}</div><div class="mid"><b>${esc(p.name)} ${p.pct ? `<span class="tag green">${pctTxt2(p.pct)}</span>` : ''}</b>
+    <small>Gastado este mes ${fmt(sp)}${p.pct && exp ? ` · ${fmt(exp * p.pct / 100)}/mes` : ''}${p.target ? ` · meta ${Math.round(pr * 100)}%` : ''}</small>
+    ${p.target ? `<div class="bar" style="height:5px;margin:6px 0 0"><i style="width:${pr * 100}%;background:var(--primary)"></i></div>` : ''}</div>
+    <div class="amt ${b < 0 ? 'red' : ''}">${fmt(b)}<div style="font-size:11px;font-weight:500;color:var(--sub)">saldo</div></div></div>`;
+  }).join('') + `</div><div class="hint">Toca <b>+</b> para crear un bolsillo con su % (ej: Fijos 50 %, Abono 20 %). Toca un bolsillo para editarlo, ver su historial o meter y sacar plata.</div>`;
   return h;
 }
+function expectedForm() {
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>Ingreso esperado</h2><button onclick="saveExpected()">Guardar</button></div>
+  <input class="amount" id="x_exp" inputmode="numeric" placeholder="$0" value="${S.settings.expectedIncome ? S.settings.expectedIncome.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
+  <div class="hint">Lo que calculas que te entra en un mes normal, sumando todos los pagos. Se usa para estimar, no cambia lo que ya registraste.</div>
+  <button class="btn" onclick="saveExpected()">Guardar</button>`);
+  setTimeout(() => $('#x_exp') && $('#x_exp').focus(), 320);
+}
+function saveExpected() { S.settings.expectedIncome = parseAmt($('#x_exp').value); closeSheet(); save(); toast('✅ Ingreso esperado guardado'); }
 
 function vSettings() {
   const st = S.settings;
-  let h = header('Ajustes');
-  h += `<div class="sect">Presupuesto</div><div class="form">
+  let h = header('Más');
+  h += moreLinks();
+  h += `<div class="sect">Presupuesto del mes</div><div class="form">
   <div class="field"><label>Límite mensual</label><input inputmode="numeric" id="s_budget" placeholder="$0" value="${st.budget ? st.budget.toLocaleString('es-CO') : ''}" oninput="fmtInput(this);setBudget(true)"></div>
   <div class="field"><label>Avisarme al</label><select id="s_pct" onchange="S.settings.alertPct=+this.value;save()">${[60, 70, 75, 80, 85, 90, 95].map(p => `<option ${p === st.alertPct ? 'selected' : ''} value="${p}">${p}%</option>`).join('')}</select></div></div>
   <div class="hint">Se guarda solo mientras escribes. Antes de registrar un gasto que te haga llegar a este porcentaje o pasarte, te aviso.</div>`;
   h += `<div class="sect">Límites por categoría (opcional)</div><div class="form">` + S.cats.out.map(([c, e]) =>
     `<div class="field"><label>${e} ${c}</label><input inputmode="numeric" placeholder="Sin límite" value="${st.catLimits[c] ? st.catLimits[c].toLocaleString('es-CO') : ''}" oninput="fmtInput(this);setCatLimit('${c}',this.value)"></div>`).join('') + `</div>`;
   h += `<div class="sect">Automático</div><div class="form">
-  <div class="field" onclick="fixedList()" style="cursor:pointer"><label>🔁 Gastos e ingresos fijos</label><span style="flex:1;text-align:right;color:var(--sub)">${S.fixed.length} ›</span></div>
   <div class="field" onclick="catList()" style="cursor:pointer"><label>🏷️ Categorías</label><span style="flex:1;text-align:right;color:var(--sub)">${S.cats.out.length + S.cats.in.length} ›</span></div>
   <div class="field" onclick="quickList()" style="cursor:pointer"><label>⚡ Atajos rápidos</label><span style="flex:1;text-align:right;color:var(--sub)">${S.quick.length} ›</span></div></div>`;
   h += `<div class="sect">Correos (desde tu Google)</div><div class="form">
-  <div class="field"><label style="flex:1">📬 Resumen diario (8 p. m.)</label><label class="sw"><input type="checkbox" ${st.mailDaily ? 'checked' : ''} onchange="S.settings.mailDaily=this.checked;save()"><i></i></label></div>
+  <div class="field"><label>Hora del correo</label><select onchange="S.settings.mailHour=+this.value;save()">${Array.from({ length: 24 }, (_, i) => `<option value="${i}" ${(st.mailHour ?? 20) === i ? 'selected' : ''}>${(i % 12 || 12) + (i < 12 ? ' a. m.' : ' p. m.')}</option>`).join('')}</select></div>
+  <div class="field"><label style="flex:1">📬 Resumen diario</label><label class="sw"><input type="checkbox" ${st.mailDaily ? 'checked' : ''} onchange="S.settings.mailDaily=this.checked;save()"><i></i></label></div>
   <div class="field"><label style="flex:1">🗓️ Resumen del mes (día 1)</label><label class="sw"><input type="checkbox" ${st.mailMonthly ? 'checked' : ''} onchange="S.settings.mailMonthly=this.checked;save()"><i></i></label></div></div>
-  <div class="hint">Se activan una sola vez desde Apps Script (función <b>instalarRecordatorios</b>).</div>`;
+  <div class="hint">Se activan una sola vez desde Apps Script (función <b>instalarRecordatorios</b>). Después puedes cambiar la hora aquí sin tocar el script.</div>`;
   h += `<div class="sect">Seguridad</div><div class="form"><div class="field" onclick="${st.pin ? 'removePin()' : 'setPinFlow()'}" style="cursor:pointer"><label>🔒 PIN de entrada</label><span style="flex:1;text-align:right;color:var(--blue)">${st.pin ? 'Quitar' : 'Activar'}</span></div></div>`;
   h += `<div class="sect">Guardar en Google Sheets</div><div class="form">
   <div class="field"><label>URL del script</label><input id="c_url" placeholder="https://script.google.com/…" value="${esc(conn.url || '')}" autocapitalize="off" autocorrect="off"></div>
@@ -651,36 +734,76 @@ function dialog({ icon, title, body, ok = 'Aceptar', cancel = 'Cancelar', danger
 let fm = {};
 function movForm(id) {
   const m = id ? S.movs.find(x => x.id === id) : null;
-  fm = m ? { ...m } : { type: 'out', cat: S.cats.out[0][0], date: today(), amount: 0, note: '', pocket: 'disp' };
+  fm = m ? { ...m } : { type: 'out', cat: firstCat('out'), date: today(), amount: 0, note: '', pocket: 'disp' };
   drawMovForm(!!m);
 }
 function drawMovForm(edit) {
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>${edit ? 'Editar' : 'Nuevo'} movimiento</h2><button onclick="saveMov()">Guardar</button></div>
   <div class="seg"><button class="${fm.type === 'out' ? 'on' : ''}" onclick="fmType('out')">Gasto</button><button class="${fm.type === 'in' ? 'on' : ''}" onclick="fmType('in')">Ingreso</button></div>
-  <input class="amount" id="f_amt" inputmode="numeric" placeholder="$0" value="${fm.amount ? fm.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this);fm.amount=parseAmt(this.value)" style="color:${fm.type === 'in' ? 'var(--green)' : 'var(--text)'}">
-  <div class="chips">${S.cats[fm.type].map(([c, e]) => `<button class="chip ${fm.cat === c ? 'on' : ''}" onclick="fm.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'))" data-c="${c}"><span>${e}</span>${c}</button>`).join('')}</div>
+  <input class="amount" id="f_amt" inputmode="numeric" placeholder="$0" value="${fm.amount ? fm.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this);fm.amount=parseAmt(this.value);updSplit()" style="color:${fm.type === 'in' ? 'var(--green)' : 'var(--text)'}">
+  ${S.cats[fm.type].length ? `<div class="chips">${S.cats[fm.type].map(([c, e]) => `<button class="chip ${fm.cat === c ? 'on' : ''}" onclick="fm.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'));updSplit()" data-c="${c}"><span>${e}</span>${c}</button>`).join('')}</div>`
+    : `<div class="card empty" style="padding:18px">Aún no tienes categorías de ${fm.type === 'in' ? 'ingreso' : 'gasto'}.<br><button class="btn sec" style="margin:12px 0 0" onclick="catType='${fm.type}';catList()">Crear categorías</button></div>`}
   <div class="form"><div class="field"><label>Nota</label><input id="f_note" placeholder="Ej: almuerzo" value="${esc(fm.note)}" oninput="fm.note=this.value"></div>
-  <div class="field"><label>Fecha</label><input type="date" id="f_date" value="${fm.date}" onchange="fm.date=this.value||today()"></div>
-  ${S.pockets.length > 1 ? `<div class="field"><label>${fm.type === 'in' ? 'Entra a' : 'Sale de'}</label><select onchange="fm.pocket=this.value">${S.pockets.map(p => `<option value="${p.id}" ${(fm.pocket || 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>` : ''}</div>
+  <div class="field"><label>Fecha</label><input type="date" id="f_date" value="${fm.date}" onchange="fm.date=this.value||today();updLink()"></div>
+  <div class="field" id="pocketField" ${S.pockets.length > 1 ? '' : 'style="display:none"'}><label>${fm.type === 'in' ? 'Entra a' : 'Sale de'}</label><select onchange="fm.pocket=this.value">${S.pockets.map(p => `<option value="${p.id}" ${(fm.pocket && fm.pocket !== 'split' ? fm.pocket : 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div></div>
+  <div id="linkbox"></div>
+  <div id="splitbox"></div>
   <button class="btn ${fm.type === 'in' ? 'green' : ''}" onclick="saveMov()">Guardar ${fm.type === 'in' ? 'ingreso' : 'gasto'}</button>
   ${edit ? `<button class="btn danger" onclick="delMov()">Eliminar</button>` : ''}`);
+  updSplit(); updLink();
   if (!edit) setTimeout(() => $('#f_amt') && $('#f_amt').focus(), 320);
 }
-function fmType(t) { fm.type = t; fm.cat = S.cats[t][0][0]; drawMovForm(!!S.movs.find(x => x.id === fm.id)); }
+function updLink() {
+  const box = $('#linkbox'); if (!box) return;
+  if (fm.type !== 'out') { box.innerHTML = ''; return; }
+  const sps = specialsOn(fm.date || today()).concat(S.specials.filter(sp => sp.id === fm.special && !specialsOn(fm.date || today()).includes(sp)));
+  if (!S.recur.length && !sps.length) { box.innerHTML = ''; return; }
+  const cur = fm.recur ? 'r:' + fm.recur : fm.special ? 's:' + fm.special : '';
+  const sp = fm.special && S.specials.find(x => x.id === fm.special);
+  box.innerHTML = `<div class="form"><div class="field"><label>Es parte de</label><select onchange="setLink(this.value)"><option value="">— Nada —</option>
+  ${S.recur.map(r => `<option value="r:${r.id}" ${cur === 'r:' + r.id ? 'selected' : ''}>${r.emoji || '🔁'} ${esc(r.name)} (quedan ${fmt(recurInfo(r, fm.date || today(), 0, fm.id).avail)})</option>`).join('')}
+  ${sps.map(x => `<option value="s:${x.id}" ${cur === 's:' + x.id ? 'selected' : ''}>${x.emoji || '🎄'} ${esc(x.name)}</option>`).join('')}</select></div>
+  ${sp && (sp.cats || []).length ? `<div class="field"><label>Categoría de ${esc(sp.name)}</label><select onchange="fm.scat=this.value">${sp.cats.map(c => `<option ${fm.scat === c.name ? 'selected' : ''} value="${esc(c.name)}">${esc(c.name)} (quedan ${fmt(c.cap - (specialInfo(sp, 0, null, fm.id).cats.find(z => z.name === c.name) || { spent: 0 }).spent)})</option>`).join('')}</select></div>` : ''}</div>`;
+}
+function setLink(v) {
+  delete fm.recur; delete fm.special; delete fm.scat;
+  if (v.startsWith('r:')) { fm.recur = v.slice(2); const r = S.recur.find(x => x.id === fm.recur); if (r) { fm.cat = r.cat; fm.pocket = r.pocket; if (!fm.note) { fm.note = r.name; const n = $('#f_note'); if (n) n.value = r.name; } document.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x.dataset.c === fm.cat)); const ps = document.querySelector('#pocketField select'); if (ps) ps.value = fm.pocket; } }
+  if (v.startsWith('s:')) { fm.special = v.slice(2); const sp = S.specials.find(x => x.id === fm.special); if (sp && sp.cats && sp.cats.length) fm.scat = sp.cats[0].name; }
+  updLink();
+}
+function willSplit() { return fm.type === 'in' && isSplitCat(fm.cat) && !fm.noSplit && S.pockets.some(p => p.pct > 0); }
+function updSplit() {
+  const box = $('#splitbox'), pf = $('#pocketField'); if (!box) return;
+  if (!willSplit()) { box.innerHTML = fm.type === 'in' && isSplitCat(fm.cat) && fm.noSplit ? `<div class="hint" style="margin-top:-4px"><a style="color:var(--primary);font-weight:600" onclick="fm.noSplit=false;updSplit()">Volver a repartir en bolsillos</a></div>` : ''; if (pf) pf.style.display = S.pockets.length > 1 ? '' : 'none'; return; }
+  if (pf) pf.style.display = 'none';
+  const sp = makeSplit(fm.amount || 0) || [], ok = pctSum() === 100;
+  box.innerHTML = `<div class="card soft" style="padding:12px 14px"><div class="b-title" style="font-size:14px;margin-bottom:6px"><span>Se reparte en tus bolsillos</span><a style="color:var(--primary);font-size:13px" onclick="fm.noSplit=true;updSplit()">No repartir</a></div>
+  ${sp.map(x => `<div class="prog" style="color:var(--text);padding:3px 0"><span>${pk(x.p).emoji} ${esc(pk(x.p).name)} <span class="muted">${pctTxt2(pk(x.p).pct)}</span></span><b>${fmt(x.a)}</b></div>`).join('')}
+  ${ok ? '' : `<div style="color:var(--warn);font-size:13px;margin-top:6px">⚠️ Tus % suman ${pctTxt2(pctSum())}. Se reparte en proporción hasta que los corrijas.</div>`}</div>`;
+}
+function fmType(t) { fm.type = t; fm.cat = isSplitCat(fm.cat) && t === 'in' ? fm.cat : (t === 'in' && S.settings.splitCats.find(c => S.cats.in.some(x => x[0] === c))) || firstCat(t); drawMovForm(!!S.movs.find(x => x.id === fm.id)); }
 async function saveMov() {
   fm.amount = parseAmt($('#f_amt').value);
   if (!fm.amount) { $('#f_amt').focus(); toast('Escribe el monto'); return; }
   if (fm.type === 'out') {
-    const msgs = checkBudget(fm.amount, fm.cat, fm.date, fm.id);
+    const msgs = checkBudget(fm.amount, fm.cat, fm.date, fm.id, { recur: fm.recur, special: fm.special, scat: fm.scat, fixed: fm.fixed });
     if (msgs.length) {
       const red = msgs.some(m => m.lvl === 'red');
       const ok = await dialog({ icon: red ? '🚨' : '⚠️', title: red ? '¡Te vas a pasar!' : 'Ojo con el presupuesto', body: msgs.map(m => m.t).join('<br><br>'), ok: 'Registrar igual', cancel: 'Mejor no', danger: red });
       if (!ok) return;
     }
   }
+  if (!S.cats[fm.type].some(c => c[0] === fm.cat) && !S.movs.some(x => x.id === fm.id)) { toast('Elige una categoría'); return; }
+  const m = { ...fm };
+  if (willSplit()) {
+    const prev = S.movs.find(x => x.id === fm.id);
+    // al editar, se respeta el reparto original salvo que cambie el monto
+    m.split = prev && prev.split && prev.amount === m.amount ? prev.split : makeSplit(m.amount); m.pocket = 'split'; delete m.noSplit;
+  } else { delete m.split; if (m.pocket === 'split') m.pocket = 'disp'; if (m.type === 'in' && isSplitCat(m.cat)) m.noSplit = true; }
+  if (m.type === 'in') { delete m.recur; delete m.special; delete m.scat; }
   const i = S.movs.findIndex(x => x.id === fm.id);
-  if (i >= 0) S.movs[i] = { ...fm }; else S.movs.push({ ...fm, id: uid() });
-  closeSheet(); save(); toast(fm.type === 'in' ? '✅ Ingreso guardado' : '✅ Gasto guardado');
+  if (i >= 0) S.movs[i] = m; else S.movs.push({ ...m, id: uid() });
+  closeSheet(); save(); toast(m.split ? '✅ Ingreso repartido en ' + m.split.length + ' bolsillos' : fm.type === 'in' ? '✅ Ingreso guardado' : '✅ Gasto guardado');
 }
 async function delMov() {
   if (!await dialog({ icon: '🗑️', title: '¿Eliminar movimiento?', ok: 'Eliminar', danger: true })) return;
@@ -691,22 +814,48 @@ async function delMov() {
 let fd = {};
 function debtForm(id) {
   const d = id ? S.debts.find(x => x.id === id) : null;
-  fd = d ? { ...d } : { dir: debtDir, person: '', amount: 0, date: today(), due: '', note: '', payments: [], closed: false, pocket: 'disp' };
+  fd = d ? { ...d } : { dir: debtDir === 'owed' ? 'owed' : 'owe', person: '', amount: 0, date: today(), due: '', note: '', payments: [], closed: false, pocket: debtDir === 'owed' ? 'disp' : 'none', cuota: 0, interest: false, allowExtra: true, start: shiftKey(curM(), 1), payDay: 1, payPocket: 'disp' };
+  drawDebtForm(!!d);
+}
+function drawDebtForm(edit) {
+  const d = edit;
+  const owe = fd.dir === 'owe', nLeft = fd.cuota ? Math.ceil((edit ? pending(fd) : fd.amount) / fd.cuota) : 0;
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>${d ? 'Editar' : 'Nueva'} deuda</h2><button onclick="saveDebt()">Guardar</button></div>
-  <div class="seg"><button class="${fd.dir === 'owed' ? 'on' : ''}" onclick="fd.dir='owed';this.classList.add('on');this.nextElementSibling.classList.remove('on')">Me deben</button><button class="${fd.dir === 'owe' ? 'on' : ''}" onclick="fd.dir='owe';this.classList.add('on');this.previousElementSibling.classList.remove('on')">Debo</button></div>
-  <input class="amount" id="d_amt" inputmode="numeric" placeholder="$0" value="${fd.amount ? fd.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
-  <div class="form"><div class="field"><label>Persona</label><input id="d_person" placeholder="Nombre" value="${esc(fd.person)}"></div>
+  <div class="seg"><button class="${fd.dir === 'owe' ? 'on' : ''}" onclick="debtSync();fd.dir='owe';fd.pocket='none';drawDebtForm(${edit})">Debo</button><button class="${fd.dir === 'owed' ? 'on' : ''}" onclick="debtSync();fd.dir='owed';fd.pocket='disp';drawDebtForm(${edit})">Me deben</button></div>
+  ${owe ? `<div class="form"><div class="field"><label>Cuota mensual</label><input id="d_cuota" inputmode="numeric" placeholder="$0" value="${fd.cuota ? fd.cuota.toLocaleString('es-CO') : ''}" oninput="fmtInput(this);autoSaldo()"></div>
+  <div class="field"><label>Cuotas restantes</label><input id="d_n" inputmode="numeric" placeholder="0" value="${nLeft || ''}" oninput="autoSaldo()"></div></div>
+  <div class="muted" style="text-align:center;font-size:13px">${edit ? 'Saldo pendiente' : 'Saldo (cuota × cuotas, o escribe el real)'}</div>` : ''}
+  <input class="amount" id="d_amt" inputmode="numeric" placeholder="$0" value="${(edit ? pending(fd) : fd.amount) ? (edit ? pending(fd) : fd.amount).toLocaleString('es-CO') : ''}" oninput="fmtInput(this);this.dataset.manual=1">
+  <div class="form"><div class="field"><label>${owe ? 'Nombre' : 'Persona'}</label><input id="d_person" placeholder="${owe ? 'Ej: Banco A' : 'Nombre'}" value="${esc(fd.person)}"></div>
+  ${owe ? `<div class="field"><label style="flex:1">Cobra intereses</label><label class="sw"><input type="checkbox" id="d_int" ${fd.interest ? 'checked' : ''}><i></i></label></div>
+  <div class="field"><label style="flex:1">Permite abonos extra</label><label class="sw"><input type="checkbox" id="d_extra" ${fd.allowExtra !== false ? 'checked' : ''}><i></i></label></div>
+  <div class="field"><label>Primera cuota del plan</label><input type="month" id="d_start" value="${fd.start || curM()}"></div>
+  <div class="field"><label>Día de pago</label><select id="d_day">${Array.from({ length: 31 }, (_, i) => `<option ${(fd.payDay || 1) === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></div>
+  <div class="field"><label>Cuota sale de</label><select id="d_paypocket">${S.pockets.map(p => `<option value="${p.id}" ${(fd.payPocket || 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>` : ''}
   <div class="field"><label>Fecha</label><input type="date" id="d_date" value="${fd.date}"></div>
-  <div class="field"><label>Fecha límite</label><input type="date" id="d_due" value="${fd.due || ''}"></div>
+  ${owe ? '' : `<div class="field"><label>Fecha límite</label><input type="date" id="d_due" value="${fd.due || ''}"></div>`}
   <div class="field"><label>Nota</label><input id="d_note" placeholder="Opcional" value="${esc(fd.note)}"></div>
   <div class="field"><label>Plata</label><select id="d_pocket">${pocketOpts(fd.pocket || 'none', true)}</select></div></div>
-  <div class="hint"><b>Plata:</b> si prestas, de qué bolsillo sale; si te prestan, a cuál entra. Si es una deuda vieja, elige "No mover dinero".<br>Con fecha límite te aviso en Inicio cuando falten 3 días o menos.</div>
+  <div class="hint">${owe ? 'Si ya tenías esta deuda (un crédito, una tarjeta), deja <b>Plata</b> en "No mover dinero". Si te acaban de prestar, elige a qué bolsillo entró. Si no permite abonos (ej. crédito de casa), igual aparece en tus pagos del mes, pero el abono extra nunca va ahí.' : '<b>Plata:</b> de qué bolsillo salió lo que prestaste. Con fecha límite te aviso en Inicio cuando falten 3 días o menos.'}</div>
   <button class="btn" onclick="saveDebt()">Guardar</button>`);
 }
+function autoSaldo() { const a = $('#d_amt'); if (a.dataset.manual) return; const c = parseAmt($('#d_cuota').value), n = parseAmt($('#d_n').value); a.value = c && n ? (c * n).toLocaleString('es-CO') : ''; }
+function debtSync() {
+  const g = id => $(id); if (g('#d_person')) fd.person = g('#d_person').value; if (g('#d_amt')) fd.amount = parseAmt(g('#d_amt').value);
+  if (g('#d_cuota')) fd.cuota = parseAmt(g('#d_cuota').value);
+}
 function saveDebt() {
-  fd.amount = parseAmt($('#d_amt').value); fd.person = $('#d_person').value.trim(); fd.date = $('#d_date').value || today(); fd.due = $('#d_due').value; fd.note = $('#d_note').value.trim();
+  const saldo = parseAmt($('#d_amt').value); fd.person = $('#d_person').value.trim(); fd.date = $('#d_date').value || today(); fd.due = $('#d_due') ? $('#d_due').value : ''; fd.note = $('#d_note').value.trim();
   const dp = $('#d_pocket').value; if (dp === 'none') delete fd.pocket; else fd.pocket = dp;
-  if (!fd.amount) { toast('Escribe el monto'); return; } if (!fd.person) { toast('Escribe el nombre'); $('#d_person').focus(); return; }
+  if (fd.dir === 'owe') {
+    fd.cuota = parseAmt($('#d_cuota').value); fd.interest = $('#d_int').checked; fd.allowExtra = $('#d_extra').checked; fd.start = $('#d_start').value || curM(); fd.payDay = +$('#d_day').value; fd.payPocket = $('#d_paypocket').value;
+  } else { delete fd.cuota; }
+  if (!saldo) { toast('Escribe el saldo'); return; } if (!fd.person) { toast('Escribe el nombre'); $('#d_person').focus(); return; }
+  const prev = S.debts.find(x => x.id === fd.id);
+  if (prev) { // al editar, el saldo escrito es el saldo real: la diferencia queda como ajuste
+    const diff = saldo - pending(prev);
+    if (diff) { fd.adjust = (fd.adjust || []).concat([{ id: uid(), amount: diff, date: today() }]); }
+  } else fd.amount = saldo;
   fd.closed = pending(fd) <= 0;
   const i = S.debts.findIndex(x => x.id === fd.id);
   if (i >= 0) S.debts[i] = { ...fd }; else S.debts.push({ ...fd, id: uid() });
@@ -717,8 +866,9 @@ function debtDetail(id) {
   const pays = (d.payments || []).slice().sort((a, b) => b.date.localeCompare(a.date));
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>${esc(d.person)}</h2><button onclick="debtForm('${d.id}')">Editar</button></div>
   <div class="detail-amt"><small>${d.dir === 'owed' ? 'Te debe' : 'Le debes'}</small><b class="${d.closed ? '' : d.dir === 'owed' ? 'pos' : 'red'}">${fmt(pending(d))}</b>
-  <small>Total ${fmt(d.amount)} · Abonado ${fmt(paid(d))}${d.due ? ' · Vence ' + dshort(d.due) : ''}</small>
-  <div class="bar"><i style="width:${d.amount ? paid(d) / d.amount * 100 : 0}%;background:var(--green)"></i></div>${d.note ? `<small>${esc(d.note)}</small>` : ''}</div>
+  <small>${d.cuota ? `${debtLeftN(d)} cuotas de ${fmt(d.cuota)} · ` : ''}Abonado ${fmt(paid(d))}${d.due ? ' · Vence ' + dshort(d.due) : ''}${d.cuota && planInfo().end[d.id] ? ' · libre en ' + monthName(planInfo().end[d.id]).toLowerCase() : ''}</small>
+  <div class="bar"><i style="width:${paid(d) + pending(d) ? paid(d) / (paid(d) + pending(d)) * 100 : 0}%;background:var(--green)"></i></div>
+  ${d.cuota ? `<small>${d.interest ? '⚠️ Cobra intereses: actualiza el saldo real con Editar cuando el banco te lo dé.' : 'Sin intereses'}${d.allowExtra === false ? ' · no permite abonos' : ''}</small>` : ''}${d.note ? `<small>${esc(d.note)}</small>` : ''}</div>
   ${!d.closed ? `<div class="form"><div class="field"><label>Abono</label><input id="p_amt" inputmode="numeric" placeholder="$0" oninput="fmtInput(this)"></div>
   <div class="field"><label>Fecha</label><input type="date" id="p_date" value="${today()}"></div>
   <div class="field"><label>${d.dir === 'owed' ? 'Entra a' : 'Sale de'}</label><select id="p_pocket">${pocketOpts(d.pocket || 'disp', true)}</select></div></div>
@@ -751,22 +901,33 @@ const EMOJIS = ['💵', '🐷', '📈', '🛟', '✈️', '🏍️', '🚗', '�
 let fp = {};
 function pocketForm(id) {
   const p = id ? S.pockets.find(x => x.id === id) : null;
-  fp = p ? { ...p } : { name: '', emoji: '🎯', initial: 0, target: 0 };
+  fp = p ? { ...p } : { name: '', emoji: '🎯', initial: 0, target: 0, pct: 0 };
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>${p ? 'Editar' : 'Nuevo'} bolsillo</h2><button onclick="savePocket()">Guardar</button></div>
   <div class="emojis">${EMOJIS.map(e => `<button class="${fp.emoji === e ? 'on' : ''}" onclick="fp.emoji='${e}';document.querySelectorAll('.emojis button').forEach(b=>b.classList.toggle('on',b.textContent==='${e}'))">${e}</button>`).join('')}</div>
   <div class="form"><div class="field"><label>Nombre</label><input id="k_name" placeholder="Ej: Viaje" value="${esc(fp.name)}"></div>
+  <div class="field"><label>% de cada ingreso</label><input id="k_pct" inputmode="decimal" placeholder="0" value="${fp.pct ? String(fp.pct).replace('.', ',') : ''}" oninput="pctHint()"><span class="muted">%</span></div>
   <div class="field"><label>Saldo inicial</label><input id="k_init" inputmode="numeric" placeholder="$0" value="${fp.initial ? fp.initial.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)"></div>
   <div class="field"><label>Meta</label><input id="k_target" inputmode="numeric" placeholder="Opcional" value="${fp.target ? fp.target.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)"></div></div>
+  <div class="hint" id="k_hint"></div>
   <div class="hint">Saldo inicial: la plata que ya tenías ahí antes de empezar a usar la app.</div>
   <button class="btn" onclick="savePocket()">Guardar</button>
-  ${p && p.id !== 'disp' ? `<button class="btn danger" onclick="delPocket('${p.id}')">Eliminar bolsillo</button>` : ''}`);
+  ${p && p.id !== 'disp' ? `<button class="btn danger" onclick="delPocket('${p.id}')">Eliminar bolsillo</button>` : p ? '<div class="hint" style="text-align:center">Este es tu bolsillo principal: aquí cae lo que no se reparte. Puedes cambiarle el nombre y el %, pero no eliminarlo.</div>' : ''}`);
+  pctHint();
+}
+function pctHint() {
+  const el = $('#k_hint'); if (!el) return;
+  const others = Math.round(sum(S.pockets.filter(x => x.id !== fp.id), x => x.pct || 0) * 100) / 100, me = parsePct($('#k_pct').value), t = Math.round((others + me) * 100) / 100;
+  el.innerHTML = `Los demás bolsillos suman ${pctTxt2(others)}. Con este quedan en <b style="color:${t === 100 ? 'var(--primary)' : t > 100 ? 'var(--over)' : 'var(--warn)'}">${pctTxt2(t)}</b>${t === 100 ? ' ✅' : t > 100 ? ' — te pasas' : ` — faltan ${pctTxt2(Math.round((100 - t) * 100) / 100)}`}.`;
 }
 function savePocket() {
-  fp.name = $('#k_name').value.trim(); fp.initial = parseAmt($('#k_init').value); fp.target = parseAmt($('#k_target').value);
+  fp.name = $('#k_name').value.trim(); fp.initial = parseAmt($('#k_init').value); fp.target = parseAmt($('#k_target').value); fp.pct = parsePct($('#k_pct').value);
   if (!fp.name) { toast('Ponle un nombre'); $('#k_name').focus(); return; }
+  if (fp.pct < 0 || fp.pct > 100) { toast('El % debe estar entre 0 y 100'); return; }
+  const tot = Math.round((sum(S.pockets.filter(x => x.id !== fp.id), x => x.pct || 0) + fp.pct) * 100) / 100;
+  if (tot > 100) { toast(`Con este % sumarían ${pctTxt2(tot)}. Baja algún %.`); return; }
   const i = S.pockets.findIndex(x => x.id === fp.id);
   if (i >= 0) S.pockets[i] = { ...fp }; else S.pockets.push({ ...fp, id: uid() });
-  closeSheet(); save(); toast('✅ Bolsillo guardado');
+  closeSheet(); save(); toast(tot === 100 ? '✅ Guardado. Tus % suman 100 %' : `✅ Guardado. Tus % suman ${pctTxt2(tot)}`);
 }
 async function delPocket(id) {
   if (Math.round(pocketBal(id)) !== 0) { await dialog({ icon: '👛', title: 'Primero vacía el bolsillo', body: `Tiene ${fmt(pocketBal(id))}. Muévelo a otro bolsillo antes de eliminarlo.`, cancel: '' }); return; }
@@ -777,7 +938,8 @@ function pocketDetail(id) {
   const p = pk(id), b = pocketBal(id);
   const hist = [
     ...S.transfers.filter(t => t.from === id || t.to === id).map(t => ({ date: t.date, id: t.id, amt: t.to === id ? t.amount : -t.amount, t: t.to === id ? `Desde ${pk(t.from).emoji} ${esc(pk(t.from).name)}` : `Hacia ${pk(t.to).emoji} ${esc(pk(t.to).name)}`, e: '⇄', tr: t.id, note: t.note })),
-    ...S.movs.filter(m => (m.pocket || 'disp') === id).map(m => ({ date: m.date, id: m.id, amt: m.type === 'in' ? m.amount : -m.amount, t: esc(m.note || m.cat), e: emojiOf(m.type, m.cat) })),
+    ...S.movs.filter(m => !m.split && (m.pocket || 'disp') === id).map(m => ({ date: m.date, id: m.id, amt: m.type === 'in' ? m.amount : -m.amount, t: esc(m.note || m.cat), e: emojiOf(m.type, m.cat) })),
+    ...S.movs.filter(m => m.split && m.split.some(x => x.p === id)).map(m => ({ date: m.date, id: m.id, amt: m.split.find(x => x.p === id).a, t: esc(m.note || m.cat) + ` (${pctTxt2(Math.round(m.split.find(x => x.p === id).a / m.amount * 1000) / 10)} de ${fmt(m.amount)})`, e: emojiOf('in', m.cat) })),
     ...S.debts.filter(d => d.pocket === id).map(d => ({ date: d.date, id: d.id, amt: d.dir === 'owe' ? d.amount : -d.amount, t: (d.dir === 'owe' ? 'Préstamo de ' : 'Préstamo a ') + esc(d.person), e: d.dir === 'owe' ? '📌' : '🤝', debt: d.id })),
     ...S.debts.flatMap(d => (d.payments || []).filter(p => p.pocket === id).map(p => ({ date: p.date, id: p.id, amt: d.dir === 'owed' ? p.amount : -p.amount, t: (d.dir === 'owed' ? 'Abono de ' : 'Abono a ') + esc(d.person), e: '💵', debt: d.id })))
   ].sort((a, c) => (c.date + c.id).localeCompare(a.date + a.id)).slice(0, 40);
@@ -815,51 +977,6 @@ async function delTransfer(tid, back) {
   S.transfers = S.transfers.filter(t => t.id !== tid); save(); pocketDetail(back);
 }
 
-// --- Gastos fijos ---
-function fixedList() {
-  const outs = activeFixed().filter(f => f.type === 'out');
-  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>Fijos</h2><button onclick="fixedForm()">Nuevo</button></div>
-  <div class="hint" style="margin:0 6px 14px">Se registran solos cada mes en el día que elijas. Total gastos fijos: <b>${fmt(sum(outs, f => f.amount))}</b> al mes.</div>
-  ${S.fixed.length ? `<div class="list">${S.fixed.slice().sort((a, b) => a.day - b.day).map(f => `<div class="item" onclick="fixedForm('${f.id}')" style="${f.active === false ? 'opacity:.45' : ''}"><div class="av">${emojiOf(f.type, f.cat)}</div>
-  <div class="mid"><b>${esc(f.name)}</b><small>Día ${f.day} · ${esc(f.cat)}${f.active === false ? ' · pausado' : ''}</small></div><div class="amt ${f.type === 'in' ? 'pos' : ''}">${f.type === 'in' ? '+' : ''}${fmt(f.amount)}</div></div>`).join('')}</div>`
-      : `<div class="card empty"><span class="e">🔁</span>Agrega tus pagos de cada mes: internet, plan del celular, lo que das a la familia…</div>`}
-  <button class="btn" onclick="fixedForm()">+ Nuevo fijo</button>`);
-}
-let ff = {};
-function fixedForm(id) {
-  const f = id ? S.fixed.find(x => x.id === id) : null;
-  ff = f ? { ...f } : { name: '', type: 'out', amount: 0, cat: (S.cats.out.find(c => c[0] === 'Internet') || S.cats.out[0])[0], day: +today().slice(8), pocket: 'disp', active: true };
-  drawFixedForm(!!f);
-}
-function drawFixedForm(edit) {
-  const catOpts = S.cats[ff.type].map(([c, e]) => `<option ${ff.cat === c ? 'selected' : ''} value="${c}">${e} ${c}</option>`).join('');
-  openSheet(`<div class="sh-head"><button onclick="fixedList()">Atrás</button><h2>${edit ? 'Editar' : 'Nuevo'} fijo</h2><button onclick="saveFixed()">Guardar</button></div>
-  <div class="seg"><button class="${ff.type === 'out' ? 'on' : ''}" onclick="ffSync();ff.type='out';ff.cat=S.cats.out[0][0];drawFixedForm(${edit})">Gasto fijo</button><button class="${ff.type === 'in' ? 'on' : ''}" onclick="ffSync();ff.type='in';ff.cat=S.cats.in[0][0];drawFixedForm(${edit})">Ingreso fijo</button></div>
-  <input class="amount" id="x_amt" inputmode="numeric" placeholder="$0" value="${ff.amount ? ff.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
-  <div class="form"><div class="field"><label>Nombre</label><input id="x_name" placeholder="${ff.type === 'in' ? 'Ej: Sueldo' : 'Ej: Internet Claro'}" value="${esc(ff.name)}"></div>
-  <div class="field"><label>Categoría</label><select id="x_cat">${catOpts}</select></div>
-  <div class="field"><label>Día del mes</label><select id="x_day">${Array.from({ length: 31 }, (_, i) => `<option ${ff.day === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></div>
-  ${S.pockets.length > 1 ? `<div class="field"><label>${ff.type === 'in' ? 'Entra a' : 'Sale de'}</label><select id="x_pocket">${S.pockets.map(p => `<option value="${p.id}" ${(ff.pocket || 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>` : ''}
-  ${edit ? `<div class="field"><label style="flex:1">Activo</label><label class="sw"><input type="checkbox" id="x_active" ${ff.active !== false ? 'checked' : ''}><i></i></label></div>`
-      : `<div class="field"><label>Este mes</label><select id="x_now"><option value="auto">Registrarlo en su día</option><option value="ya">Ya lo anoté este mes</option></select></div>`}</div>
-  <div class="hint">Si el mes tiene menos días (ej. día 31 en febrero), se registra el último día del mes.</div>
-  <button class="btn" onclick="saveFixed()">Guardar</button>
-  ${edit ? `<button class="btn danger" onclick="delFixed()">Eliminar fijo</button>` : ''}`);
-}
-function ffSync() { ff.amount = parseAmt($('#x_amt').value); ff.name = $('#x_name').value; ff.day = +$('#x_day').value; }
-function saveFixed() {
-  ffSync(); ff.name = ff.name.trim(); ff.cat = $('#x_cat').value; if ($('#x_pocket')) ff.pocket = $('#x_pocket').value;
-  if (!ff.amount) { toast('Escribe el monto'); return; } if (!ff.name) { toast('Ponle un nombre'); $('#x_name').focus(); return; }
-  const i = S.fixed.findIndex(x => x.id === ff.id);
-  if (i >= 0) { ff.active = $('#x_active').checked; S.fixed[i] = { ...ff }; }
-  else { ff.id = uid(); ff.lastMonth = $('#x_now').value === 'ya' ? curM() : null; S.fixed.push({ ...ff }); }
-  save(); runFixed(); fixedList(); toast('✅ Fijo guardado');
-}
-async function delFixed() {
-  if (!await dialog({ icon: '🗑️', title: '¿Eliminar este fijo?', body: 'Los movimientos que ya se registraron se quedan.', ok: 'Eliminar', danger: true })) return;
-  S.fixed = S.fixed.filter(x => x.id !== ff.id); save(); fixedList();
-}
-
 // --- Atajos rápidos ---
 function quickList() {
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>Atajos rápidos</h2><button onclick="quickForm()">Nuevo</button></div>
@@ -869,10 +986,10 @@ function quickList() {
   <button class="btn" onclick="quickForm()">+ Nuevo atajo</button>`);
 }
 let fq = {};
-function quickForm(id) { const x = id ? S.quick.find(z => z.id === id) : null; fq = x ? { ...x } : { type: 'out', cat: (S.cats.out.find(c => c[0] === 'Gasolina') || S.cats.out[0])[0], amount: 0, name: '', pocket: 'disp' }; drawQuickForm(!!x); }
+function quickForm(id) { const x = id ? S.quick.find(z => z.id === id) : null; fq = x ? { ...x } : { type: 'out', cat: firstCat('out'), amount: 0, name: '', pocket: 'disp' }; drawQuickForm(!!x); }
 function drawQuickForm(edit) {
   openSheet(`<div class="sh-head"><button onclick="quickList()">Atrás</button><h2>${edit ? 'Editar' : 'Nuevo'} atajo</h2><button onclick="saveQuick()">Guardar</button></div>
-  <div class="seg"><button class="${fq.type === 'out' ? 'on' : ''}" onclick="fqSync();fq.type='out';fq.cat=S.cats.out[0][0];drawQuickForm(${edit})">Gasto</button><button class="${fq.type === 'in' ? 'on' : ''}" onclick="fqSync();fq.type='in';fq.cat=S.cats.in[0][0];drawQuickForm(${edit})">Ingreso</button></div>
+  <div class="seg"><button class="${fq.type === 'out' ? 'on' : ''}" onclick="fqSync();fq.type='out';fq.cat=firstCat('out');drawQuickForm(${edit})">Gasto</button><button class="${fq.type === 'in' ? 'on' : ''}" onclick="fqSync();fq.type='in';fq.cat=firstCat('in');drawQuickForm(${edit})">Ingreso</button></div>
   <input class="amount" id="q_amt" inputmode="numeric" placeholder="$0" value="${fq.amount ? fq.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
   <div class="chips">${S.cats[fq.type].map(([c, e]) => `<button class="chip ${fq.cat === c ? 'on' : ''}" data-c="${c}" onclick="fq.cat='${c}';document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.c==='${c}'))"><span>${e}</span>${c}</button>`).join('')}</div>
   <div class="form"><div class="field"><label>Nombre</label><input id="q_name" placeholder="Opcional, ej: Tanqueada" value="${esc(fq.name)}"></div>
@@ -898,6 +1015,7 @@ async function quickAdd(id) {
     }
   }
   const m = { id: uid(), type: x.type, amount: x.amount, cat: x.cat, note: x.name || '', date: today(), pocket: x.pocket || 'disp' };
+  if (m.type === 'in' && isSplitCat(m.cat)) { const sp = makeSplit(m.amount); if (sp) { m.split = sp; m.pocket = 'split'; } }
   S.movs.push(m); save();
   toast(`✅ ${x.name || x.cat} ${fmt(x.amount)}`, () => { S.movs = S.movs.filter(z => z.id !== m.id); save(); });
 }
@@ -909,9 +1027,12 @@ function catList() {
   const L = S.cats[catType];
   openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cerrar</button><h2>Categorías</h2><button onclick="catForm()">Nueva</button></div>
   <div class="seg"><button class="${catType === 'out' ? 'on' : ''}" onclick="catType='out';catList()">Gastos</button><button class="${catType === 'in' ? 'on' : ''}" onclick="catType='in';catList()">Ingresos</button></div>
-  <div class="list">${L.map(([c, e], i) => `<div class="item"><div class="av">${e}</div><div class="mid" onclick="catForm(${i})"><b>${esc(c)}</b><small>${sum(S.movs.filter(m => m.type === catType && m.cat === c))
+  ${catType === 'in' && L.length ? '<div class="hint" style="margin:0 6px 10px">Activa <b>Repartir</b> en las categorías cuyos ingresos se dividen en tus bolsillos según los %.</div>' : ''}
+  ${L.length ? `<div class="list">${L.map(([c, e], i) => `<div class="item"><div class="av">${e}</div><div class="mid" onclick="catForm(${i})"><b>${esc(c)}</b><small>${sum(S.movs.filter(m => m.type === catType && m.cat === c))
       ? fmt(sum(S.movs.filter(m => m.type === catType && m.cat === c))) + ' registrados' : 'Sin movimientos'} · toca para editar</small></div>
-  ${L.length > 1 ? `<button onclick="delCat(${i})" style="border:0;background:var(--over-soft);color:var(--over);width:34px;height:34px;border-radius:17px;font-size:18px">−</button>` : ''}</div>`).join('')}</div>
+  ${catType === 'in' ? `<div style="text-align:center;font-size:10px;color:var(--sub)"><label class="sw"><input type="checkbox" ${isSplitCat(c) ? 'checked' : ''} onchange="toggleSplit('${c}',this.checked)"><i></i></label><div>Repartir</div></div>` : ''}
+  <button onclick="delCat(${i})" style="border:0;background:var(--over-soft);color:var(--over);width:34px;height:34px;border-radius:17px;font-size:18px;flex:none">−</button></div>`).join('')}</div>`
+    : `<div class="card empty"><span class="e">🏷️</span>No tienes categorías de ${catType === 'out' ? 'gasto' : 'ingreso'}.<br><button class="btn sec" style="margin:12px 0 0" onclick="loadSuggestions('${catType}')">Cargar sugerencias (las puedes editar)</button></div>`}
   <button class="btn" onclick="catForm()">+ Nueva categoría de ${catType === 'out' ? 'gasto' : 'ingreso'}</button>
   <div class="hint">Si borras una categoría, los movimientos que ya tenías no se borran: conservan su nombre.</div>`);
 }
@@ -938,6 +1059,7 @@ function saveCat() {
       S.movs.forEach(m => { if (m.type === catType && m.cat === old) m.cat = name; });
       S.fixed.forEach(f => { if (f.type === catType && f.cat === old) f.cat = name; });
       S.quick.forEach(q => { if (q.type === catType && q.cat === old) q.cat = name; });
+      if (catType === 'in') S.settings.splitCats = S.settings.splitCats.map(x => x === old ? name : x);
       if (catType === 'out' && S.settings.catLimits[old]) { S.settings.catLimits[name] = S.settings.catLimits[old]; delete S.settings.catLimits[old]; }
     }
   } else {
@@ -946,11 +1068,13 @@ function saveCat() {
   }
   save(); catList(); toast('✅ Categoría guardada');
 }
+function toggleSplit(c, on) { const L = S.settings.splitCats.filter(x => x !== c); if (on) L.push(c); S.settings.splitCats = L; save(); catList(); toast(on ? `✅ Los ingresos de ${c} se repartirán en tus bolsillos` : `Los ingresos de ${c} ya no se reparten`); }
+function loadSuggestions(t) { S.cats[t] = clone(SUG_CATS[t]); save(); catList(); toast('✅ Sugerencias cargadas. Edita o borra las que no uses'); }
 async function delCat(i) {
   const [c, e] = S.cats[catType][i];
   if (!await dialog({ icon: e, title: `¿Eliminar "${esc(c)}"?`, body: 'Tus movimientos con esta categoría se quedan como están.', ok: 'Eliminar', danger: true })) return;
   S.cats[catType].splice(i, 1);
-  if (catType === 'out') delete S.settings.catLimits[c];
+  if (catType === 'out') delete S.settings.catLimits[c]; else S.settings.splitCats = S.settings.splitCats.filter(x => x !== c);
   save(); catList();
 }
 
@@ -980,6 +1104,378 @@ function importData(inp) {
 async function wipe() {
   if (!await dialog({ icon: '⚠️', title: '¿Borrar todo?', body: 'Se eliminarán todos tus movimientos, deudas y metas. No se puede deshacer.', ok: 'Borrar todo', danger: true })) return;
   const pin = S.settings.pin; S = blank(); S.settings.pin = pin; save(); toast('Datos borrados');
+}
+
+/* ================================================================
+   PLANEACIÓN: pagos del mes, recurrentes con tope, límite semanal,
+   plan de deudas (cronograma) y presupuestos especiales.
+   Ningún valor está fijo: todo sale de lo que el usuario configura.
+   ================================================================ */
+
+/* ---------- Semanas y periodos ---------- */
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const addDays = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+function weekRange(date = today()) {
+  const ws = S.settings.weekStart ?? 1, x = new Date(date + 'T12:00'), back = (x.getDay() - ws + 7) % 7;
+  const a = addDays(date, -back); return [a, addDays(a, 6)];
+}
+const countsForWeek = m => m.type === 'out' && !m.fixed && !m.special;
+function weekInfo(date = today(), extra = 0, exclude) {
+  const L = S.settings.weeklyLimit || 0, [a, b] = weekRange(date);
+  const spent = sum(S.movs.filter(m => countsForWeek(m) && m.id !== exclude && inRange(m, a, b))) + extra;
+  const pct = L ? spent / L : 0;
+  return { L, a, b, spent, pct, left: L - spent, lvl: !L ? 'none' : pct > 1 ? 'red' : pct >= 0.8 ? 'orange' : 'green' };
+}
+
+/* ---------- Recurrentes con tope ---------- */
+const FREQ = { semanal: 'Semanal', quincenal: 'Quincenal', mensual: 'Mensual' };
+function periodOf(r, date) {
+  if (r.freq === 'mensual') { const k = mkey(date); return [k + '-01', k + '-' + String(dim(k)).padStart(2, '0')]; }
+  if (r.freq === 'quincenal') { const st = r.start || date, n = Math.floor(Math.round((new Date(date + 'T12:00') - new Date(st + 'T12:00')) / 864e5) / 14); const a = addDays(st, n * 14); return [a, addDays(a, 13)]; }
+  return weekRange(date);
+}
+function recurInfo(r, date = today(), extra = 0, exclude) {
+  const [a, b] = periodOf(r, date), mine = S.movs.filter(m => m.recur === r.id && m.id !== exclude);
+  const spentCur = sum(mine.filter(m => inRange(m, a, b))) + extra;
+  let avail = r.cap - spentCur, periods = 1, carried = 0;
+  if (r.carry) {
+    const st = r.start || a; let [pa] = periodOf(r, st), guard = 0; periods = 0;
+    while (pa <= a && guard++ < 600) { periods++; const [, pb] = periodOf(r, pa); pa = addDays(pb, 1); }
+    const spentAll = sum(mine.filter(m => m.date >= (r.start || a) && m.date <= b)) + extra;
+    avail = periods * r.cap - spentAll; carried = avail - (r.cap - spentCur);
+  }
+  return { a, b, spentCur, avail, carried, periods };
+}
+
+/* ---------- Presupuestos especiales ---------- */
+const specialsOn = date => S.specials.filter(sp => date >= sp.start && date <= sp.end);
+function specialInfo(sp, extra = 0, scat = null, exclude) {
+  const mine = S.movs.filter(m => m.special === sp.id && m.id !== exclude);
+  const spent = sum(mine) + extra;
+  const cats = (sp.cats || []).map(c => ({ ...c, spent: sum(mine.filter(m => m.scat === c.name)) + (scat === c.name ? extra : 0) }));
+  return { spent, cats, left: sp.total - spent };
+}
+const pausedMonth = k => S.specials.some(sp => sp.pauseExtra && mkey(sp.start) <= k && mkey(sp.end) >= k);
+
+/* ---------- Deudas y plan ---------- */
+const planDebts = () => S.debts.filter(d => d.dir === 'owe' && d.cuota > 0);
+const debtLeftN = d => d.cuota ? Math.ceil(pending(d) / d.cuota) : 0;
+const extraMonthly = () => { const p = S.pockets.find(x => x.id === S.settings.extraPocket); return p ? Math.round((S.settings.expectedIncome || 0) * (p.pct || 0) / 100) : 0; };
+const paidIn = (d, k) => sum((d.payments || []).filter(p => mkey(p.date) === k));
+function planInfo() {
+  const k0 = curM(), debts = planDebts().filter(d => !d.closed), extra = extraMonthly();
+  const bal = {}, end = {}; debts.forEach(d => { bal[d.id] = pending(d) + paidIn(d, k0); });
+  const rows = []; let k = k0, guard = 0;
+  while (debts.some(d => bal[d.id] > 0) && guard++ < 600) {
+    const started = debts.filter(d => (d.start || k0) <= k), active = started.filter(d => bal[d.id] > 0);
+    if (!active.length) { k = shiftKey(k, 1); continue; }
+    const paused = pausedMonth(k), budget = sum(started, d => d.cuota) + (paused ? 0 : extra), items = {};
+    active.forEach(d => { items[d.id] = { d, cuota: Math.min(d.cuota, bal[d.id]), extra: 0 }; });
+    let pool = paused ? 0 : budget - sum(Object.values(items), x => x.cuota);
+    // el abono va primero a la que cobra intereses; luego a la de menor saldo
+    active.filter(d => d.allowExtra).sort((a, b) => (b.interest ? 1 : 0) - (a.interest ? 1 : 0) || bal[a.id] - bal[b.id]).forEach(d => {
+      if (pool <= 0) return; const add = Math.min(pool, bal[d.id] - items[d.id].cuota); items[d.id].extra += add; pool -= add;
+    });
+    const list = Object.values(items).map(x => { const amt = x.cuota + x.extra, fin = amt >= bal[x.d.id]; bal[x.d.id] -= amt; if (bal[x.d.id] <= 0 && !end[x.d.id]) end[x.d.id] = k; return { ...x, amount: amt, final: fin }; });
+    rows.push({ k, items: list, paused, total: sum(list, x => x.amount) });
+    k = shiftKey(k, 1);
+  }
+  const all = planDebts(), withExtra = all.filter(d => d.allowExtra && !d.closed);
+  const totalPaid = sum(all, paid), totalLeft = sum(all.filter(d => !d.closed), pending);
+  const freeExtra = withExtra.length ? withExtra.map(d => end[d.id] || k0).sort().pop() : null;
+  const freeAll = all.filter(d => !d.closed).length ? all.filter(d => !d.closed).map(d => end[d.id] || k0).sort().pop() : null;
+  return { rows, end, extra, totalPaid, totalLeft, progress: totalPaid + totalLeft ? totalPaid / (totalPaid + totalLeft) : 1, freeExtra, freeAll };
+}
+const rowPaid = (it, k) => paidIn(it.d, k) >= it.amount && it.amount > 0;
+
+/* ---------- Pagos del mes (fijos + cuotas) ---------- */
+function fixedPaidMov(f, k = curM()) { return S.movs.find(m => m.fixed === f.id && mkey(m.date) === k); }
+function monthPayments(k = curM()) {
+  const fx = activeFixed().filter(f => f.type === 'out').map(f => ({ kind: 'fixed', f, date: fixDate(k, f.day), amount: f.amount, paid: !!fixedPaidMov(f, k), mov: fixedPaidMov(f, k) }));
+  const pr = planInfo().rows.find(r => r.k === k), dbt = pr ? pr.items.map(it => ({ kind: 'debt', it, date: fixDate(k, it.d.payDay || 1), amount: it.amount, paid: rowPaid(it, k) })) : [];
+  return [...fx, ...dbt].sort((a, b) => a.date.localeCompare(b.date));
+}
+function payRow(x) {
+  const lbl = x.kind === 'fixed' ? x.f.name : x.it.d.person, emo = x.kind === 'fixed' ? emojiOf('out', x.f.cat) : '💳';
+  const tag = x.kind === 'fixed' ? (x.f.kind === 'variable' ? '<span class="tag orange">variable</span>' : '') : (x.it.final ? '<span class="tag red">pago final</span>' : x.it.extra ? '<span class="tag green">+ abono</span>' : '');
+  const amt = x.kind === 'fixed' && x.paid ? x.mov.amount : x.amount;
+  const act = x.kind === 'fixed' ? `toggleFixedPaid('${x.f.id}')` : `toggleDebtPaid('${x.it.d.id}')`;
+  return `<div class="item" style="cursor:default"><button class="chk ${x.paid ? 'on' : ''}" onclick="${act}">${x.paid ? '✓' : ''}</button>
+  <div class="mid"><b>${emo} ${esc(lbl)} ${tag}</b><small>${x.paid ? 'Pagado' : 'Día ' + +x.date.slice(8)}${x.kind === 'debt' && x.it.extra ? ` · cuota ${fmt(x.it.cuota)} + abono ${fmt(x.it.extra)}` : ''}${x.kind === 'fixed' && x.f.kind === 'variable' && !x.paid ? ' · estimado' : ''}</small></div>
+  <div class="amt ${x.paid ? 'muted' : ''}" style="${x.paid ? 'text-decoration:line-through' : ''}">${fmt(amt)}</div></div>`;
+}
+async function toggleFixedPaid(id) {
+  const f = S.fixed.find(x => x.id === id), k = curM(), m = fixedPaidMov(f, k);
+  if (m) { if (!await dialog({ icon: '↩️', title: `¿Desmarcar ${esc(f.name)}?`, body: 'Se borra el gasto que se registró al marcarlo.', ok: 'Desmarcar', danger: true })) return; S.movs = S.movs.filter(x => x.id !== m.id); f.lastMonth = k; save(); refreshOpen(); return; }
+  if (f.kind === 'variable') return amountAsk(`${esc(f.name)}: ¿cuánto pagaste?`, f.amount, a => { addFixedMov(f, a); });
+  addFixedMov(f, f.amount);
+}
+function addFixedMov(f, a) {
+  const k = curM(); S.movs.push({ id: uid(), type: 'out', amount: a, cat: f.cat, note: f.name, date: today(), pocket: f.pocket || 'disp', fixed: f.id }); f.lastMonth = k;
+  save(); refreshOpen(); toast(`✅ ${f.name} pagado: ${fmt(a)}`);
+}
+async function toggleDebtPaid(id) {
+  const d = S.debts.find(x => x.id === id), k = curM(), row = (planInfo().rows.find(r => r.k === k) || { items: [] }).items.find(it => it.d.id === id);
+  if (!row) return;
+  if (rowPaid(row, k)) {
+    if (!await dialog({ icon: '↩️', title: '¿Desmarcar este pago?', body: 'Se borran los abonos registrados desde el plan este mes.', ok: 'Desmarcar', danger: true })) return;
+    d.payments = (d.payments || []).filter(p => !(p.plan === k)); d.closed = pending(d) <= 0; save(); refreshOpen(); return;
+  }
+  if (row.final && !await dialog({ icon: '🏁', title: 'Pago final', body: `Antes de pagar <b>pide al banco el saldo total para pago anticipado</b>. El plan calcula ${fmt(row.amount)}, pero con intereses puede variar.`, ok: 'Ya lo confirmé, marcar', cancel: 'Después' })) return;
+  const done = paidIn(d, k), need = row.amount - done, cuotaPart = Math.max(0, Math.min(row.cuota - done, need)), extraPart = need - cuotaPart;
+  if (cuotaPart > 0) { registerPayment(d, cuotaPart, today(), d.payPocket || 'disp'); d.payments[d.payments.length - 1].plan = k; }
+  if (extraPart > 0) { registerPayment(d, extraPart, today(), S.settings.extraPocket || d.payPocket || 'disp'); d.payments[d.payments.length - 1].plan = k; }
+  save(); refreshOpen(); toast(d.closed ? `🎉 ¡Terminaste de pagar ${d.person}!` : `✅ Pago de ${d.person} marcado`);
+}
+function refreshOpen() { if ($('#ov').classList.contains('show') && window._sheetRefresh) window._sheetRefresh(); }
+function amountAsk(title, def, cb) {
+  window._amountCb = cb;
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>Monto</h2><button onclick="amountOk()">Listo</button></div>
+  <div class="muted" style="text-align:center">${title}</div>
+  <input class="amount" id="ask_amt" inputmode="numeric" value="${def ? def.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
+  <button class="btn" onclick="amountOk()">Guardar</button>`);
+  setTimeout(() => $('#ask_amt') && $('#ask_amt').focus(), 320);
+}
+function amountOk() { const a = parseAmt($('#ask_amt').value); if (!a) { toast('Escribe el monto'); return; } closeSheet(); window._amountCb(a); }
+function monthPaySheet() {
+  window._sheetRefresh = monthPaySheet;
+  const L = monthPayments(), pend = L.filter(x => !x.paid);
+  openSheet(`<div class="sh-head"><button onclick="window._sheetRefresh=null;closeSheet()">Cerrar</button><h2>Pagos de ${monthName(curM()).split(' ')[0].toLowerCase()}</h2><button onclick="window._sheetRefresh=null;fixedList()">Fijos</button></div>
+  <div class="card soft" style="padding:12px 14px"><div class="prog" style="color:var(--text)"><span>Pagado <b>${fmt(sum(L.filter(x => x.paid), x => x.kind === 'fixed' ? x.mov.amount : x.amount))}</b></span><span>Falta <b>${fmt(sum(pend, x => x.amount))}</b></span></div>
+  <div class="bar" style="background:var(--white)"><i style="width:${L.length ? (L.length - pend.length) / L.length * 100 : 0}%;background:var(--primary)"></i></div><div class="muted" style="font-size:13px">${L.length - pend.length} de ${L.length} pagos hechos</div></div>
+  ${L.length ? `<div class="list">${L.map(payRow).join('')}</div>` : '<div class="card empty">No tienes pagos fijos ni cuotas este mes. Agrégalos en Más → Gastos fijos o en Deudas.</div>'}
+  <div class="hint">Marca la casilla cuando pagues. Los fijos variables te preguntan el monto real. Las cuotas salen del plan de deudas.</div>`);
+}
+
+/* ---------- Vista Deudas: Debo / Me deben / Plan ---------- */
+function debtOweItem(d, pi) {
+  const left = pending(d), tot = paid(d) + left, pr = tot ? paid(d) / tot : 1, e = pi.end[d.id];
+  return `<div class="item" onclick="debtDetail('${d.id}')"><div class="av">💳</div><div class="mid"><b>${esc(d.person)} ${d.interest ? '<span class="tag orange">con interés</span>' : '<span class="tag green">sin interés</span>'}</b>
+  <small>${d.closed ? 'Pagada ✅' : `${debtLeftN(d)} cuotas de ${fmt(d.cuota)}${d.allowExtra ? '' : ' · sin abonos'}${e ? ' · libre en ' + monthName(e).toLowerCase() : ''}`}</small>
+  <div class="bar" style="height:6px;margin:6px 0 0"><i style="width:${pr * 100}%;background:var(--primary)"></i></div></div><div class="amt ${d.closed ? 'muted' : ''}">${fmt(left)}<div style="font-size:11px;font-weight:500;color:var(--sub)">${Math.round(pr * 100)}%</div></div></div>`;
+}
+function vPlan() {
+  const pi = planInfo(), k0 = curM();
+  let h = '';
+  if (!planDebts().length) return `<div class="card empty"><span class="e">🗓️</span>Para ver tu plan, registra tus deudas en <b>Debo</b> con su cuota y número de cuotas.</div>`;
+  h += `<div class="card hero"><div class="lbl">${pi.freeExtra ? '🎉 Quedas libre de las deudas con abono en' : 'Plan de deudas'}</div><div class="big" style="font-size:32px;margin-bottom:6px">${pi.freeExtra ? monthName(pi.freeExtra) : '—'}</div>
+  <div class="bar" style="background:rgba(255,255,255,.25)"><i style="width:${pi.progress * 100}%;background:#fff"></i></div>
+  <div class="lbl">${Math.round(pi.progress * 100)} % pagado · faltan ${fmt(pi.totalLeft)}${pi.freeAll && pi.freeAll !== pi.freeExtra ? ` · todas: ${monthName(pi.freeAll).toLowerCase()}` : ''}</div></div>`;
+  const xp = S.pockets.find(p => p.id === S.settings.extraPocket);
+  h += `<div class="form"><div class="field" onclick="planSettings()" style="cursor:pointer"><label style="flex:1">💪 Abono extra mensual</label><b style="color:var(--primary)">${xp ? fmt(pi.extra) : 'Configurar'}</b><span class="muted">›</span></div></div>
+  <div class="hint">${xp ? `${pctTxt2(xp.pct)} de tu ingreso esperado, del bolsillo ${xp.emoji} ${esc(xp.name)} (hoy tiene ${fmt(pocketBal(xp.id))}). Va primero a la deuda con intereses; cuando una termina, su cuota pasa a la siguiente.` : 'Elige de qué bolsillo sale el abono extra.'}</div>`;
+  // meses pasados con pagos reales
+  const past = [...new Set(planDebts().flatMap(d => (d.payments || []).map(p => mkey(p.date))))].filter(k => k < k0).sort();
+  past.forEach(k => {
+    const its = planDebts().filter(d => paidIn(d, k) > 0);
+    h += `<div class="sect"><span>${monthName(k)}</span><span style="text-transform:none">✓ ${fmt(sum(its, d => paidIn(d, k)))}</span></div><div class="list">${its.map(d => `<div class="item" style="cursor:default"><span class="chk on">✓</span><div class="mid"><b>${esc(d.person)}</b><small>Pagado</small></div><div class="amt muted">${fmt(paidIn(d, k))}</div></div>`).join('')}</div>`;
+  });
+  const cut = pi.freeExtra && pi.freeAll && pi.freeAll > pi.freeExtra ? pi.freeExtra : null; let opened = false;
+  pi.rows.forEach(r => {
+    if (cut && r.k > cut && !opened) { opened = true; const rest = pi.rows.filter(x => x.k > cut); h += `<details><summary class="sect" style="cursor:pointer"><span>Meses siguientes (${rest.length})</span><a>Mostrar</a></summary><div class="hint" style="margin-top:0">Solo quedan cuotas normales de las deudas sin abonos: ${[...new Set(rest.flatMap(x => x.items.map(i => esc(i.d.person))))].join(', ')}.</div>`; }
+    const cur = r.k === k0, allPaid = r.items.every(it => rowPaid(it, r.k));
+    h += `<div class="sect"><span>${monthName(r.k)}${cur ? ' · este mes' : ''}</span><span style="text-transform:none">${allPaid ? '✓ ' : ''}${fmt(r.total)}</span></div>`;
+    if (r.paused) h += `<div class="alert orange" style="margin-bottom:8px;padding:10px 12px;font-size:14px"><span class="ic">⏸️</span><div>Abono pausado este mes por ${S.specials.filter(sp => sp.pauseExtra && mkey(sp.start) <= r.k && mkey(sp.end) >= r.k).map(sp => esc(sp.name)).join(', ')}. Solo cuotas normales.</div></div>`;
+    h += `<div class="list">${r.items.map(it => {
+      const pd = rowPaid(it, r.k);
+      return `<div class="item" style="cursor:default">${cur ? `<button class="chk ${pd ? 'on' : ''}" onclick="toggleDebtPaid('${it.d.id}')">${pd ? '✓' : ''}</button>` : `<span class="chk ${pd ? 'on' : ''}" style="opacity:.45">${pd ? '✓' : ''}</span>`}
+      <div class="mid"><b>${esc(it.d.person)} ${it.final ? '<span class="tag red">pago final</span>' : ''}</b><small>${it.extra ? `Cuota ${fmt(it.cuota)} + abono ${fmt(it.extra)}` : 'Cuota normal'}</small>
+      ${it.final ? '<div style="font-size:12px;color:var(--over);margin-top:3px">🏦 Pide al banco el saldo total para pago anticipado</div>' : ''}</div>
+      <div class="amt">${fmt(it.amount)}</div></div>`;
+    }).join('')}</div>`;
+  });
+  if (opened) h += '</details>';
+  h += `<div class="hint" style="margin-top:4px">Solo puedes marcar los pagos del mes actual. Los meses siguientes se recalculan solos según lo que pagues.</div>`;
+  return h;
+}
+function planSettings() {
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>Abono extra</h2><button onclick="savePlanSettings()">Guardar</button></div>
+  <div class="form"><div class="field"><label>Bolsillo del abono</label><select id="pl_pocket"><option value="">— Elegir —</option>${S.pockets.map(p => `<option value="${p.id}" ${S.settings.extraPocket === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)} (${pctTxt2(p.pct || 0)})</option>`).join('')}</select></div>
+  <div class="field" onclick="closeSheet();expectedForm()" style="cursor:pointer"><label style="flex:1">Ingreso mensual esperado</label><b>${fmt(S.settings.expectedIncome || 0)}</b><span class="muted">›</span></div></div>
+  <div class="hint">El abono mensual = % del bolsillo × ingreso esperado. Si un mes tienes un presupuesto especial con "pausar abono", ese mes solo se pagan cuotas normales.</div>
+  <button class="btn" onclick="savePlanSettings()">Guardar</button>`);
+}
+function savePlanSettings() { S.settings.extraPocket = $('#pl_pocket').value; closeSheet(); save(); toast('✅ Plan actualizado'); }
+
+/* ---------- Recurrentes: lista y formulario ---------- */
+function recurList() {
+  window._sheetRefresh = recurList;
+  openSheet(`<div class="sh-head"><button onclick="window._sheetRefresh=null;closeSheet()">Cerrar</button><h2>Recurrentes con tope</h2><button onclick="recurForm()">Nuevo</button></div>
+  ${S.recur.length ? `<div class="list">${S.recur.map(r => { const ri = recurInfo(r), pr = r.cap ? Math.min(1, ri.spentCur / Math.max(1, ri.avail + ri.spentCur)) : 0, lv = ri.avail < 0 ? 'red' : pr >= .8 ? 'orange' : 'green'; return `<div class="item" onclick="recurForm('${r.id}')"><div class="av">${r.emoji || emojiOf('out', r.cat)}</div><div class="mid"><b>${esc(r.name)}</b><small>${FREQ[r.freq]} · tope ${fmt(r.cap)}${r.carry ? ' · acumula' : ''}</small>
+  <div class="bar" style="height:6px;margin:6px 0 0"><i style="width:${pr * 100}%;background:${lvlColor(lv)}"></i></div></div><div class="amt ${ri.avail < 0 ? 'red' : ''}">${fmt(ri.avail)}<div style="font-size:11px;font-weight:500;color:var(--sub)">disponible</div></div></div>`; }).join('')}</div>`
+      : '<div class="card empty"><span class="e">🍽️</span>Crea gastos que se repiten con un tope, como una cena semanal. Si sobra, se puede acumular para la siguiente vez.</div>'}
+  <button class="btn" onclick="recurForm()">+ Nuevo recurrente</button>
+  <div class="hint">Al registrar un gasto, elige el recurrente en "Es parte de" para que descuente del tope.</div>`);
+}
+let fr = {};
+function recurForm(id) {
+  const r = id ? S.recur.find(x => x.id === id) : null;
+  fr = r ? { ...r } : { name: '', emoji: '🍽️', cat: firstCat('out'), pocket: 'disp', freq: 'semanal', cap: 0, carry: true, start: weekRange()[0] };
+  openSheet(`<div class="sh-head"><button onclick="recurList()">Atrás</button><h2>${r ? 'Editar' : 'Nuevo'} recurrente</h2><button onclick="saveRecur()">Guardar</button></div>
+  <input class="amount" id="r_cap" inputmode="numeric" placeholder="Tope $0" value="${fr.cap ? fr.cap.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
+  <div class="form"><div class="field"><label>Nombre</label><input id="r_name" placeholder="Ej: Cena del domingo" value="${esc(fr.name)}"></div>
+  <div class="field"><label>Emoji</label><input id="r_emoji" maxlength="8" value="${fr.emoji || ''}"></div>
+  <div class="field"><label>Frecuencia</label><select id="r_freq">${Object.entries(FREQ).map(([k, v]) => `<option value="${k}" ${fr.freq === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+  <div class="field"><label>Categoría</label><select id="r_cat">${S.cats.out.map(([c, e]) => `<option ${fr.cat === c ? 'selected' : ''} value="${esc(c)}">${e} ${esc(c)}</option>`).join('')}</select></div>
+  <div class="field"><label>Sale de</label><select id="r_pocket">${S.pockets.map(p => `<option value="${p.id}" ${fr.pocket === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>
+  <div class="field"><label>Desde</label><input type="date" id="r_start" value="${fr.start}"></div>
+  <div class="field"><label style="flex:1">Acumular lo que sobre</label><label class="sw"><input type="checkbox" id="r_carry" ${fr.carry ? 'checked' : ''}><i></i></label></div></div>
+  <div class="hint">Tope por vez. Con "acumular", lo que no gastes pasa a la siguiente vez (y si te pasas, se descuenta).</div>
+  <button class="btn" onclick="saveRecur()">Guardar</button>
+  ${r ? `<button class="btn danger" onclick="delRecur('${r.id}')">Eliminar</button>` : ''}`);
+}
+function saveRecur() {
+  fr.cap = parseAmt($('#r_cap').value); fr.name = $('#r_name').value.trim(); fr.emoji = $('#r_emoji').value.trim(); fr.freq = $('#r_freq').value; fr.cat = $('#r_cat').value; fr.pocket = $('#r_pocket').value; fr.start = $('#r_start').value || today(); fr.carry = $('#r_carry').checked;
+  if (!fr.cap) { toast('Escribe el tope'); return; } if (!fr.name) { toast('Ponle un nombre'); return; }
+  const i = S.recur.findIndex(x => x.id === fr.id); if (i >= 0) S.recur[i] = { ...fr }; else S.recur.push({ ...fr, id: uid() });
+  save(); recurList(); toast('✅ Recurrente guardado');
+}
+async function delRecur(id) { if (!await dialog({ icon: '🗑️', title: '¿Eliminar recurrente?', body: 'Los gastos ya registrados se conservan.', ok: 'Eliminar', danger: true })) return; S.recur = S.recur.filter(x => x.id !== id); S.movs.forEach(m => { if (m.recur === id) delete m.recur; }); save(); recurList(); }
+
+/* ---------- Límite semanal ---------- */
+function weekForm() {
+  openSheet(`<div class="sh-head"><button onclick="closeSheet()">Cancelar</button><h2>Límite semanal</h2><button onclick="saveWeek()">Guardar</button></div>
+  <input class="amount" id="w_lim" inputmode="numeric" placeholder="$0" value="${S.settings.weeklyLimit ? S.settings.weeklyLimit.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
+  <div class="form"><div class="field"><label>La semana empieza</label><select id="w_start">${DIAS.map((d, i) => `<option value="${i}" ${(S.settings.weekStart ?? 1) === i ? 'selected' : ''}>${d}</option>`).join('')}</select></div></div>
+  <div class="hint">Cuenta tus gastos del día a día (incluye los recurrentes como la cena). No cuenta gastos fijos, cuotas de deudas ni presupuestos especiales. Te aviso al 80 % y al 100 %. Déjalo en $0 para desactivarlo.</div>
+  <button class="btn" onclick="saveWeek()">Guardar</button>`);
+}
+function saveWeek() { S.settings.weeklyLimit = parseAmt($('#w_lim').value); S.settings.weekStart = +$('#w_start').value; closeSheet(); save(); toast('✅ Límite semanal guardado'); }
+function weekCard() {
+  const w = weekInfo(); if (!w.L) return '';
+  return `<div class="card" onclick="weekForm()" style="cursor:pointer"><div class="b-title"><span>🗓️ Esta semana</span><span class="badge" style="background:${lvlSoft(w.lvl)};color:${lvlColor(w.lvl)}">${Math.round(w.pct * 100)}%</span></div>
+  <div class="bar"><i style="width:${Math.min(100, w.pct * 100)}%;background:${lvlColor(w.lvl)}"></i></div>
+  <div class="prog"><span>Gastado ${fmt(w.spent)}</span><span>Límite ${fmt(w.L)}</span></div>
+  <div class="muted" style="margin-top:6px">${w.left >= 0 ? `Te quedan <b style="color:var(--text)">${fmt(w.left)}</b> hasta el ${DIAS[new Date(w.b + 'T12:00').getDay()]} ${+w.b.slice(8)}` : `<b class="red">Te pasaste ${fmt(-w.left)}</b> esta semana`}</div></div>`;
+}
+
+/* ---------- Presupuestos especiales ---------- */
+function specialList() {
+  window._sheetRefresh = specialList;
+  openSheet(`<div class="sh-head"><button onclick="window._sheetRefresh=null;closeSheet()">Cerrar</button><h2>Presupuestos especiales</h2><button onclick="specialForm()">Nuevo</button></div>
+  ${S.specials.length ? `<div class="list">${S.specials.map(sp => { const si = specialInfo(sp), pr = sp.total ? si.spent / sp.total : 0, lv = pr > 1 ? 'red' : pr >= .8 ? 'orange' : 'green'; return `<div class="item" onclick="specialDetail('${sp.id}')"><div class="av">${sp.emoji || '🎄'}</div><div class="mid"><b>${esc(sp.name)} ${sp.pauseExtra ? '<span class="tag orange">abono pausado</span>' : ''}</b><small>${dshort(sp.start)} – ${dshort(sp.end)} · ${fmt(si.spent)} de ${fmt(sp.total)}</small>
+  <div class="bar" style="height:6px;margin:6px 0 0"><i style="width:${Math.min(100, pr * 100)}%;background:${lvlColor(lv)}"></i></div></div></div>`; }).join('')}</div>`
+      : '<div class="card empty"><span class="e">🎄</span>Para Navidad, viajes o temporadas: un total con topes por categoría y la opción de pausar el abono a deudas.</div>'}
+  <button class="btn" onclick="specialForm()">+ Nuevo presupuesto especial</button>`);
+}
+function specialCard(sp) {
+  const si = specialInfo(sp), pr = sp.total ? si.spent / sp.total : 0, lv = pr > 1 ? 'red' : pr >= .8 ? 'orange' : 'green';
+  return `<div class="card soft" onclick="specialDetail('${sp.id}')" style="cursor:pointer"><div class="b-title"><span>${sp.emoji || '🎄'} ${esc(sp.name)}</span><span class="badge" style="background:var(--white);color:${lvlColor(lv)}">${Math.round(pr * 100)}%</span></div>
+  <div class="bar" style="background:var(--white)"><i style="width:${Math.min(100, pr * 100)}%;background:${lvlColor(lv)}"></i></div>
+  <div class="prog"><span>Gastado ${fmt(si.spent)}</span><span>Total ${fmt(sp.total)}</span></div></div>`;
+}
+function specialDetail(id) {
+  const sp = S.specials.find(x => x.id === id); if (!sp) return; const si = specialInfo(sp);
+  window._sheetRefresh = () => specialDetail(id);
+  openSheet(`<div class="sh-head"><button onclick="specialList()">Atrás</button><h2>${sp.emoji || '🎄'} ${esc(sp.name)}</h2><button onclick="specialForm('${id}')">Editar</button></div>
+  <div class="detail-amt"><small>Te queda</small><b class="${si.left < 0 ? 'red' : ''}">${fmt(si.left)}</b><small>${fmt(si.spent)} de ${fmt(sp.total)} · ${dshort(sp.start)} – ${dshort(sp.end)}</small></div>
+  ${sp.pauseExtra ? '<div class="alert orange"><span class="ic">⏸️</span><div>El abono extra a deudas está pausado en estos meses.</div></div>' : ''}
+  <div class="card">${si.cats.length ? si.cats.map(c => { const pr = c.cap ? c.spent / c.cap : 0, lv = pr > 1 ? 'red' : pr >= .8 ? 'orange' : 'green'; return `<div class="catrow"><div class="t"><span>${esc(c.name)}</span><span><b>${fmt(c.spent)}</b> <span class="muted">/ ${fmt(c.cap)}</span></span></div><div class="bar"><i style="width:${Math.min(100, pr * 100)}%;background:${lvlColor(lv)}"></i></div></div>`; }).join('') : '<div class="muted">Sin categorías: solo se controla el total.</div>'}</div>
+  <div class="hint">Para cargar un gasto aquí, al registrarlo elige "${esc(sp.name)}" en "Es parte de".</div>
+  ${S.movs.filter(m => m.special === id).length ? `<div class="list">${S.movs.filter(m => m.special === id).sort((a, b) => b.date.localeCompare(a.date)).map(movItem).join('')}</div>` : ''}`);
+}
+let fs2 = {};
+function specialForm(id) {
+  const sp = id ? S.specials.find(x => x.id === id) : null, k = curM();
+  fs2 = sp ? clone(sp) : { name: '', emoji: '🎄', start: k + '-01', end: k + '-' + dim(k), total: 0, cats: [], pauseExtra: false };
+  drawSpecialForm(!!sp);
+}
+function drawSpecialForm(edit) {
+  openSheet(`<div class="sh-head"><button onclick="specialList()">Atrás</button><h2>${edit ? 'Editar' : 'Nuevo'} presupuesto</h2><button onclick="saveSpecial()">Guardar</button></div>
+  <input class="amount" id="e_total" inputmode="numeric" placeholder="Total $0" value="${fs2.total ? fs2.total.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
+  <div class="form"><div class="field"><label>Nombre</label><input id="e_name" placeholder="Ej: Diciembre" value="${esc(fs2.name)}"></div>
+  <div class="field"><label>Emoji</label><input id="e_emoji" maxlength="8" value="${fs2.emoji || ''}"></div>
+  <div class="field"><label>Desde</label><input type="date" id="e_start" value="${fs2.start}"></div>
+  <div class="field"><label>Hasta</label><input type="date" id="e_end" value="${fs2.end}"></div>
+  <div class="field"><label style="flex:1">Pausar abono a deudas</label><label class="sw"><input type="checkbox" id="e_pause" ${fs2.pauseExtra ? 'checked' : ''}><i></i></label></div></div>
+  <div class="sect">Categorías con tope</div>
+  <div class="form" id="e_cats">${fs2.cats.map((c, i) => `<div class="field"><input data-i="${i}" class="e_cn" placeholder="Categoría" value="${esc(c.name)}" style="text-align:left"><input data-i="${i}" class="e_cc" inputmode="numeric" placeholder="Tope" value="${c.cap ? c.cap.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)" style="max-width:110px"><button onclick="specSync();fs2.cats.splice(${i},1);drawSpecialForm(${edit})" style="border:0;background:var(--over-soft);color:var(--over);width:30px;height:30px;border-radius:15px">−</button></div>`).join('') || '<div class="field muted">Sin categorías todavía</div>'}</div>
+  <button class="btn sec" onclick="specSync();fs2.cats.push({name:'',cap:0});drawSpecialForm(${edit})">+ Agregar categoría</button>
+  <div class="hint" id="e_hint"></div>
+  <button class="btn" onclick="saveSpecial()">Guardar</button>
+  ${edit ? `<button class="btn danger" onclick="delSpecial('${fs2.id}')">Eliminar</button>` : ''}`);
+}
+function specSync() {
+  fs2.total = parseAmt($('#e_total').value); fs2.name = $('#e_name').value; fs2.emoji = $('#e_emoji').value; fs2.start = $('#e_start').value; fs2.end = $('#e_end').value; fs2.pauseExtra = $('#e_pause').checked;
+  document.querySelectorAll('.e_cn').forEach(el => { fs2.cats[+el.dataset.i].name = el.value.replace(/['"\\<>`$]/g, '').trim(); });
+  document.querySelectorAll('.e_cc').forEach(el => { fs2.cats[+el.dataset.i].cap = parseAmt(el.value); });
+}
+function saveSpecial() {
+  specSync(); fs2.name = fs2.name.trim(); fs2.cats = fs2.cats.filter(c => c.name);
+  if (!fs2.name) { toast('Ponle un nombre'); return; } if (!fs2.total) { toast('Escribe el total'); return; } if (!fs2.start || !fs2.end || fs2.end < fs2.start) { toast('Revisa las fechas'); return; }
+  const caps = sum(fs2.cats, c => c.cap);
+  if (caps > fs2.total) { toast(`Los topes suman ${fmt(caps)}, más que el total`); return; }
+  const i = S.specials.findIndex(x => x.id === fs2.id); if (i >= 0) S.specials[i] = { ...fs2 }; else S.specials.push({ ...fs2, id: uid() });
+  save(); specialList(); toast('✅ Presupuesto especial guardado');
+}
+async function delSpecial(id) { if (!await dialog({ icon: '🗑️', title: '¿Eliminar presupuesto?', body: 'Los gastos se conservan, solo dejan de estar asignados.', ok: 'Eliminar', danger: true })) return; S.specials = S.specials.filter(x => x.id !== id); S.movs.forEach(m => { if (m.special === id) { delete m.special; delete m.scat; } }); save(); specialList(); }
+
+/* ---------- Gastos fijos: lista y formulario (reemplaza la versión anterior) ---------- */
+function fixedList() {
+  window._sheetRefresh = fixedList;
+  const outs = activeFixed().filter(f => f.type === 'out');
+  openSheet(`<div class="sh-head"><button onclick="window._sheetRefresh=null;closeSheet()">Cerrar</button><h2>Gastos fijos</h2><button onclick="fixedForm()">Nuevo</button></div>
+  <div class="hint" style="margin:0 6px 14px">Total gastos fijos: <b>${fmt(sum(outs, f => f.amount))}</b> al mes. Márcalos como pagados en <b>Pagos del mes</b>.</div>
+  ${S.fixed.length ? `<div class="list">${S.fixed.slice().sort((a, b) => a.day - b.day).map(f => `<div class="item" onclick="fixedForm('${f.id}')" style="${f.active === false ? 'opacity:.45' : ''}"><div class="av">${emojiOf(f.type, f.cat)}</div>
+  <div class="mid"><b>${esc(f.name)} ${f.kind === 'variable' ? '<span class="tag orange">variable</span>' : '<span class="tag green">fijo</span>'}</b><small>Día ${f.day} · ${pk(f.pocket || 'disp').emoji} ${esc(pk(f.pocket || 'disp').name)}${f.mode === 'auto' ? ' · se anota solo' : ''}${f.active === false ? ' · pausado' : ''}</small></div><div class="amt ${f.type === 'in' ? 'pos' : ''}">${f.type === 'in' ? '+' : ''}${fmt(f.amount)}</div></div>`).join('')}</div>`
+      : `<div class="card empty"><span class="e">🔁</span>Agrega tus pagos de cada mes: servicios, celular, suscripciones…</div>`}
+  <button class="btn" onclick="fixedForm()">+ Nuevo gasto fijo</button>
+  <button class="btn sec" onclick="window._sheetRefresh=null;monthPaySheet()">✓ Ver pagos del mes</button>`);
+}
+let ff = {};
+function fixedForm(id) {
+  const f = id ? S.fixed.find(x => x.id === id) : null;
+  ff = f ? { ...f } : { name: '', type: 'out', kind: 'fijo', mode: 'manual', amount: 0, cat: firstCat('out'), day: +today().slice(8), pocket: 'disp', active: true };
+  if (!ff.kind) ff.kind = 'fijo'; if (!ff.mode) ff.mode = 'auto';
+  drawFixedForm(!!f);
+}
+function drawFixedForm(edit) {
+  const catOpts = S.cats[ff.type].map(([c, e]) => `<option ${ff.cat === c ? 'selected' : ''} value="${esc(c)}">${e} ${esc(c)}</option>`).join('');
+  openSheet(`<div class="sh-head"><button onclick="fixedList()">Atrás</button><h2>${edit ? 'Editar' : 'Nuevo'} fijo</h2><button onclick="saveFixed()">Guardar</button></div>
+  <div class="seg"><button class="${ff.type === 'out' ? 'on' : ''}" onclick="ffSync();ff.type='out';ff.cat=firstCat('out');drawFixedForm(${edit})">Gasto</button><button class="${ff.type === 'in' ? 'on' : ''}" onclick="ffSync();ff.type='in';ff.cat=firstCat('in');ff.mode='auto';drawFixedForm(${edit})">Ingreso</button></div>
+  ${ff.type === 'out' ? `<div class="seg"><button class="${ff.kind === 'fijo' ? 'on' : ''}" onclick="ffSync();ff.kind='fijo';drawFixedForm(${edit})">Monto fijo</button><button class="${ff.kind === 'variable' ? 'on' : ''}" onclick="ffSync();ff.kind='variable';drawFixedForm(${edit})">Variable</button></div>` : ''}
+  <input class="amount" id="x_amt" inputmode="numeric" placeholder="$0" value="${ff.amount ? ff.amount.toLocaleString('es-CO') : ''}" oninput="fmtInput(this)">
+  ${ff.kind === 'variable' && ff.type === 'out' ? '<div class="hint" style="text-align:center;margin-top:-10px">Monto estimado. Al marcarlo pagado te pregunta el valor real.</div>' : ''}
+  <div class="form"><div class="field"><label>Nombre</label><input id="x_name" placeholder="Ej: Luz" value="${esc(ff.name)}"></div>
+  <div class="field"><label>Categoría</label><select id="x_cat">${catOpts}</select></div>
+  <div class="field"><label>Día de pago</label><select id="x_day">${Array.from({ length: 31 }, (_, i) => `<option ${ff.day === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select></div>
+  <div class="field"><label>${ff.type === 'in' ? 'Entra a' : 'Sale de'}</label><select id="x_pocket">${S.pockets.map(p => `<option value="${p.id}" ${(ff.pocket || 'disp') === p.id ? 'selected' : ''}>${p.emoji} ${esc(p.name)}</option>`).join('')}</select></div>
+  ${ff.type === 'out' ? `<div class="field"><label style="flex:1">Anotarlo solo ese día</label><label class="sw"><input type="checkbox" id="x_auto" ${ff.mode === 'auto' && ff.kind !== 'variable' ? 'checked' : ''} ${ff.kind === 'variable' ? 'disabled' : ''}><i></i></label></div>` : ''}
+  ${edit ? `<div class="field"><label style="flex:1">Activo</label><label class="sw"><input type="checkbox" id="x_active" ${ff.active !== false ? 'checked' : ''}><i></i></label></div>` : ''}</div>
+  <div class="hint">Si "Anotarlo solo" está apagado, lo marcas tú como pagado en Pagos del mes.</div>
+  <button class="btn" onclick="saveFixed()">Guardar</button>
+  ${edit ? `<button class="btn danger" onclick="delFixed()">Eliminar fijo</button>` : ''}`);
+}
+function ffSync() { ff.amount = parseAmt($('#x_amt').value); ff.name = $('#x_name').value; ff.day = +$('#x_day').value; const a = $('#x_auto'); if (a) ff.mode = a.checked ? 'auto' : 'manual'; }
+function saveFixed() {
+  ffSync(); ff.name = ff.name.trim(); ff.cat = $('#x_cat').value; ff.pocket = $('#x_pocket').value;
+  if (ff.kind === 'variable' || (ff.type === 'out' && !$('#x_auto').checked)) ff.mode = 'manual'; else ff.mode = 'auto';
+  if (!ff.amount) { toast('Escribe el monto'); return; } if (!ff.name) { toast('Ponle un nombre'); $('#x_name').focus(); return; }
+  const i = S.fixed.findIndex(x => x.id === ff.id);
+  if (i >= 0) { const a = $('#x_active'); if (a) ff.active = a.checked; S.fixed[i] = { ...ff }; }
+  else { ff.id = uid(); ff.lastMonth = ff.mode === 'auto' && fixDate(curM(), ff.day) <= today() ? curM() : null; S.fixed.push({ ...ff }); }
+  save(); runFixed(); fixedList(); toast('✅ Fijo guardado');
+}
+async function delFixed() {
+  if (!await dialog({ icon: '🗑️', title: '¿Eliminar este fijo?', body: 'Los movimientos que ya se registraron se quedan.', ok: 'Eliminar', danger: true })) return;
+  S.fixed = S.fixed.filter(x => x.id !== ff.id); save(); fixedList();
+}
+
+/* ---------- Vista "Más" ---------- */
+function moreLinks() {
+  const w = S.settings.weeklyLimit, mp = monthPayments(), pend = mp.filter(x => !x.paid).length;
+  return `<div class="sect">Planeación</div><div class="form">
+  <div class="field" onclick="monthPaySheet()" style="cursor:pointer"><label style="flex:1">✅ Pagos del mes</label><span class="muted">${pend ? pend + ' pendientes' : mp.length ? 'al día' : ''} ›</span></div>
+  <div class="field" onclick="fixedList()" style="cursor:pointer"><label style="flex:1">🔁 Gastos fijos</label><span class="muted">${S.fixed.length} ›</span></div>
+  <div class="field" onclick="recurList()" style="cursor:pointer"><label style="flex:1">🍽️ Recurrentes con tope</label><span class="muted">${S.recur.length} ›</span></div>
+  <div class="field" onclick="weekForm()" style="cursor:pointer"><label style="flex:1">🗓️ Límite semanal</label><span class="muted">${w ? fmt(w) : 'Sin definir'} ›</span></div>
+  <div class="field" onclick="specialList()" style="cursor:pointer"><label style="flex:1">🎄 Presupuestos especiales</label><span class="muted">${S.specials.length} ›</span></div>
+  <div class="field" onclick="debtDir='plan';go('debts')" style="cursor:pointer"><label style="flex:1">💳 Plan de deudas</label><span class="muted">›</span></div></div>`;
+}
+
+/* ---------- Datos que se envían a la hoja (pestaña Plan) ---------- */
+function planSnapshot() {
+  try { return planInfo().rows.map(r => ({ k: r.k, paused: r.paused, items: r.items.map(it => ({ debt: it.d.person, cuota: it.cuota, extra: it.extra, amount: it.amount, final: it.final, paid: rowPaid(it, r.k) })) })); } catch (e) { return []; }
 }
 
 /* ============ PIN ============ */
@@ -1023,7 +1519,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('online', () => pull());
 render();
 if (S.settings.pin) showLock('unlock');
-if (conn.url) pull(); else runFixed();
+if (conn.url) pull(); else { runFixed(); applySplits(); }
 </script>
 </body>
 </html>
